@@ -1,0 +1,120 @@
+{
+  "summary": "HawkTUI - A sleek, high-performance TUI wrapper for pi_agent_rust. Provides a modern terminal interface with split panels, session management, and real-time streaming visualization.",
+  "nodes": {
+    "hawktui": {
+      "description": "HawkTUI - A premium TUI wrapper for pi_agent_rust AI coding agent",
+      "assets": [],
+      "data": {
+        "type": "project",
+        "version": "0.1.0",
+        "tagline": "See everything. Control everything. Code like a hawk.",
+        "rust_edition": "2024",
+        "features": [
+          "multi-panel layout",
+          "streaming visualization",
+          "session management",
+          "tool execution dashboard",
+          "themes",
+          "keyboard-first"
+        ],
+        "integration": "library-level with pi_agent_rust",
+        "status": "MVP complete",
+        "binary_size": "2.4MB",
+        "files_created": [
+          "src/main.rs",
+          "src/lib.rs",
+          "src/app.rs",
+          "src/core/mod.rs",
+          "src/core/error.rs",
+          "src/core/state.rs",
+          "src/core/events.rs",
+          "src/core/keybindings.rs",
+          "src/core/commands.rs",
+          "src/ui/mod.rs",
+          "src/ui/layout.rs",
+          "src/ui/themes/mod.rs",
+          "src/ui/panels/mod.rs",
+          "src/ui/panels/header.rs",
+          "src/ui/panels/conversation.rs",
+          "src/ui/panels/sessions.rs",
+          "src/ui/panels/tools.rs",
+          "src/ui/panels/input.rs",
+          "src/ui/widgets/mod.rs",
+          "src/ui/widgets/spinner.rs",
+          "src/ui/widgets/streaming.rs",
+          "src/providers/mod.rs",
+          "src/providers/pi_bridge.rs"
+        ]
+      },
+      "time": {
+        "created": "2026-04-03T20:04:58Z",
+        "updated": "2026-04-03T20:21:24Z",
+        "updates": 1
+      }
+    },
+    "core_layer": {
+      "description": "Core Layer - state management, event loop, keybindings, commands",
+      "assets": [],
+      "data": {
+        "type": "component",
+        "path": "src/core/",
+        "submodules": [
+          "state",
+          "events",
+          "commands",
+          "keybindings"
+        ]
+      },
+      "time": {
+        "created": "2026-04-03T20:05:07Z",
+        "updated": "2026-04-03T20:05:07Z",
+        "updates": 0
+      }
+    },
+    "ui_layer": {
+      "description": "UI Layer - ratatui-based panels, widgets, themes, and animations",
+      "assets": [],
+      "data": {
+        "type": "component",
+        "path": "src/ui/",
+        "dependencies": [
+          "ratatui",
+          "crossterm",
+          "syntect",
+          "pulldown-cmark"
+        ],
+        "submodules": [
+          "layout",
+          "panels",
+          "widgets",
+          "themes"
+        ]
+      },
+      "time": {
+        "created": "2026-04-03T20:05:07Z",
+        "updated": "2026-04-03T20:05:07Z",
+        "updates": 0
+      }
+    },
+    "integration_layer": {
+      "description": "Integration Layer - pi_agent_rust library bridge, provider adapters, session bridge",
+      "assets": [],
+      "data": {
+        "type": "component",
+        "path": "src/providers/",
+        "dependencies": [
+          "pi_agent_rust"
+        ],
+        "submodules": [
+          "pi_bridge"
+        ]
+      },
+      "time": {
+        "created": "2026-04-03T20:05:07Z",
+        "updated": "2026-04-03T20:05:07Z",
+        "updates": 0
+      }
+    }
+  },
+  "edges": {}
+}

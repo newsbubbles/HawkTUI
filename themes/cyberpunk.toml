@@ -1,0 +1,43 @@
+# HawkTUI Cyberpunk Theme
+# Neon-soaked terminal aesthetics
+
+[meta]
+name = "Cyberpunk"
+author = "HawkTUI Team"
+version = "1.0.0"
+
+[colors]
+background = "#0a0a0f"
+foreground = "#00ff9f"
+accent = "#ff00ff"
+accent_secondary = "#00ffff"
+success = "#00ff00"
+warning = "#ffff00"
+error = "#ff0055"
+info = "#00ffff"
+muted = "#666699"
+highlight = "#ff00ff"
+
+[panels]
+conversation_bg = "#0a0a0f"
+sidebar_bg = "#0f0f1a"
+input_bg = "#1a1a2e"
+status_bg = "#16213e"
+user_message_bg = "#1a1a2e"
+assistant_message_bg = "#0f0f1a"
+
+[borders]
+style = "double"
+color = "#ff00ff"
+focused_color = "#00ffff"
+
+[syntax]
+keyword = "#ff00ff"
+string = "#00ff9f"
+comment = "#666699"
+function = "#00ffff"
+type = "#ff0055"
+number = "#ffff00"
+operator = "#ff00ff"
+variable = "#00ff9f"
+constant = "#ffff00"
