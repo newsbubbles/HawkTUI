@@ -320,13 +320,12 @@ pub enum BorderStyle {
 
 impl BorderStyle {
     /// Convert to ratatui border type.
-    pub fn to_ratatui(self) -> ratatui::widgets::BorderType {
+    pub const fn to_ratatui(self) -> ratatui::widgets::BorderType {
         match self {
             Self::Rounded => ratatui::widgets::BorderType::Rounded,
-            Self::Sharp => ratatui::widgets::BorderType::Plain,
+            Self::Sharp | Self::None => ratatui::widgets::BorderType::Plain,
             Self::Double => ratatui::widgets::BorderType::Double,
             Self::Thick => ratatui::widgets::BorderType::Thick,
-            Self::None => ratatui::widgets::BorderType::Plain,
         }
     }
 }

@@ -33,18 +33,21 @@ impl<'a> Spinner<'a> {
     }
 
     /// Set the animation frames.
+    #[must_use]
     pub const fn frames(mut self, frames: &'a [&'a str]) -> Self {
         self.frames = frames;
         self
     }
 
     /// Set the style.
+    #[must_use]
     pub const fn style(mut self, style: Style) -> Self {
         self.style = style;
         self
     }
 
     /// Set a label to display after the spinner.
+    #[must_use]
     pub const fn label(mut self, label: &'a str) -> Self {
         self.label = Some(label);
         self
@@ -76,6 +79,7 @@ impl Widget for Spinner<'_> {
 }
 
 /// Calculate the next frame index.
-pub fn next_frame(current: usize, total_frames: usize) -> usize {
+#[must_use]
+pub const fn next_frame(current: usize, total_frames: usize) -> usize {
     (current + 1) % total_frames
 }

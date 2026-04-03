@@ -18,7 +18,7 @@ pub struct StreamingIndicator<'a> {
 }
 
 impl<'a> StreamingIndicator<'a> {
-    pub fn new(tokens: u64, frame: usize, theme: &'a Theme) -> Self {
+    pub const fn new(tokens: u64, frame: usize, theme: &'a Theme) -> Self {
         Self {
             tokens,
             frame,
@@ -71,7 +71,7 @@ pub struct ThinkingIndicator<'a> {
 }
 
 impl<'a> ThinkingIndicator<'a> {
-    pub fn new(frame: usize, theme: &'a Theme) -> Self {
+    pub const fn new(frame: usize, theme: &'a Theme) -> Self {
         Self { frame, theme }
     }
 }

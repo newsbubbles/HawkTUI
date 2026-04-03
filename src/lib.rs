@@ -16,11 +16,11 @@
 //! ## Quick Start
 //!
 //! ```no_run
-//! use hawktui::App;
+//! use hawktui::{App, Result};
 //!
 //! #[tokio::main]
-//! async fn main() -> anyhow::Result<()> {
-//!     let app = App::new()?;
+//! async fn main() -> Result<()> {
+//!     let mut app = App::new()?;
 //!     app.run().await
 //! }
 //! ```

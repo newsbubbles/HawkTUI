@@ -501,7 +501,7 @@ impl App {
             widgets::Paragraph,
         };
 
-        let hints = vec![
+        let hints = [
             ("Ctrl+Enter", "send"),
             ("Ctrl+P", "palette"),
             ("F1", "help"),

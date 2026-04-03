@@ -1,9 +1,49 @@
 {
   "summary": "HawkTUI - A sleek, high-performance TUI wrapper for pi_agent_rust. Provides a modern terminal interface with split panels, session management, and real-time streaming visualization.",
   "nodes": {
-    "hawktui": {
-      "description": "HawkTUI - A premium TUI wrapper for pi_agent_rust AI coding agent",
+    "integration_layer": {
+      "description": "Integration Layer - pi_agent_rust library bridge, provider adapters, session bridge",
       "assets": [],
+      "data": {
+        "type": "component",
+        "path": "src/providers/",
+        "dependencies": [
+          "pi_agent_rust"
+        ],
+        "submodules": [
+          "pi_bridge"
+        ]
+      },
+      "time": {
+        "created": "2026-04-03T20:05:07Z",
+        "updated": "2026-04-03T20:05:07Z",
+        "updates": 0
+      }
+    },
+    "core_layer": {
+      "description": "Core Layer - state management, event loop, keybindings, commands",
+      "assets": [],
+      "data": {
+        "type": "component",
+        "path": "src/core/",
+        "submodules": [
+          "state",
+          "events",
+          "commands",
+          "keybindings"
+        ]
+      },
+      "time": {
+        "created": "2026-04-03T20:05:07Z",
+        "updated": "2026-04-03T20:05:07Z",
+        "updates": 0
+      }
+    },
+    "hawktui": {
+      "description": "HawkTUI - A premium TUI wrapper for pi_agent_rust AI coding agent, now live on GitHub with tagline 'Spit on that thang!'",
+      "assets": [
+        "https://github.com/newsbubbles/HawkTUI"
+      ],
       "data": {
         "type": "project",
         "version": "0.1.0",
@@ -48,27 +88,8 @@
       },
       "time": {
         "created": "2026-04-03T20:04:58Z",
-        "updated": "2026-04-03T20:21:24Z",
-        "updates": 1
-      }
-    },
-    "core_layer": {
-      "description": "Core Layer - state management, event loop, keybindings, commands",
-      "assets": [],
-      "data": {
-        "type": "component",
-        "path": "src/core/",
-        "submodules": [
-          "state",
-          "events",
-          "commands",
-          "keybindings"
-        ]
-      },
-      "time": {
-        "created": "2026-04-03T20:05:07Z",
-        "updated": "2026-04-03T20:05:07Z",
-        "updates": 0
+        "updated": "2026-04-03T20:30:15Z",
+        "updates": 3
       }
     },
     "ui_layer": {
@@ -88,25 +109,6 @@
           "panels",
           "widgets",
           "themes"
-        ]
-      },
-      "time": {
-        "created": "2026-04-03T20:05:07Z",
-        "updated": "2026-04-03T20:05:07Z",
-        "updates": 0
-      }
-    },
-    "integration_layer": {
-      "description": "Integration Layer - pi_agent_rust library bridge, provider adapters, session bridge",
-      "assets": [],
-      "data": {
-        "type": "component",
-        "path": "src/providers/",
-        "dependencies": [
-          "pi_agent_rust"
-        ],
-        "submodules": [
-          "pi_bridge"
         ]
       },
       "time": {
