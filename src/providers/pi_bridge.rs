@@ -21,12 +21,12 @@
 use crate::core::error::{Error, Result};
 use crate::core::events::{AgentEvent, StopReason};
 
-use pi::sdk::{
-    AbortHandle, AgentEvent as PiAgentEvent, AgentSessionHandle,
-    AssistantMessage, Config as PiConfig, SessionOptions, ToolDefinition,
-    ToolOutput, ContentBlock, all_tool_definitions, create_agent_session,
-};
 use pi::model::{AssistantMessageEvent, StopReason as PiStopReason};
+use pi::sdk::{
+    AbortHandle, AgentEvent as PiAgentEvent, AgentSessionHandle, AssistantMessage,
+    Config as PiConfig, ContentBlock, SessionOptions, ToolDefinition, ToolOutput,
+    all_tool_definitions, create_agent_session,
+};
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -110,7 +110,9 @@ impl PiBridge {
             let (_, model_id) = guard.model();
             model_id
         } else {
-            self.model.clone().unwrap_or_else(|| "claude-sonnet-4-20250514".to_string())
+            self.model
+                .clone()
+                .unwrap_or_else(|| "claude-sonnet-4-20250514".to_string())
         }
     }
 
@@ -121,22 +123,29 @@ impl PiBridge {
             let (provider, _) = guard.model();
             provider
         } else {
-            self.provider.clone().unwrap_or_else(|| "anthropic".to_string())
+            self.provider
+                .clone()
+                .unwrap_or_else(|| "anthropic".to_string())
         }
     }
 
     /// Set the model and provider.
-    pub async fn set_model(&mut self, provider: impl Into<String>, model: impl Into<String>) -> Result<()> {
+    pub async fn set_model(
+        &mut self,
+        provider: impl Into<String>,
+        model: impl Into<String>,
+    ) -> Result<()> {
         let provider = provider.into();
         let model = model.into();
-        
+
         if let Some(handle) = &self.handle {
             let mut guard = handle.lock().await;
-            guard.set_model(&provider, &model)
+            guard
+                .set_model(&provider, &model)
                 .await
                 .map_err(|e| Error::agent(format!("Failed to set model: {e}")))?;
         }
-        
+
         self.provider = Some(provider);
         self.model = Some(model);
         Ok(())
@@ -145,15 +154,13 @@ impl PiBridge {
     /// Send a message and stream the response.
     ///
     /// The callback receives translated HawkTUI events.
-    pub async fn send_message<F>(
-        &mut self,
-        message: &str,
-        on_event: F,
-    ) -> Result<AssistantMessage>
+    pub async fn send_message<F>(&mut self, message: &str, on_event: F) -> Result<AssistantMessage>
     where
         F: Fn(AgentEvent) + Send + Sync + 'static,
     {
-        let handle = self.handle.as_ref()
+        let handle = self
+            .handle
+            .as_ref()
             .ok_or_else(|| Error::agent("Not connected to agent"))?;
 
         // Create abort handle for this operation
@@ -269,9 +276,9 @@ impl PiBridge {
     pub async fn list_sessions(&self) -> Result<Vec<SessionSummary>> {
         // Get session directory from pi's config
         let session_dir = PiConfig::sessions_dir();
-        
+
         let mut sessions = Vec::new();
-        
+
         if let Ok(entries) = std::fs::read_dir(&session_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
@@ -279,11 +286,13 @@ impl PiBridge {
                     if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
                         // Try to read session metadata
                         let metadata = entry.metadata().ok();
-                        let created = metadata.as_ref()
+                        let created = metadata
+                            .as_ref()
                             .and_then(|m| m.created().ok())
                             .map(chrono::DateTime::<chrono::Utc>::from)
                             .unwrap_or_else(chrono::Utc::now);
-                        let modified = metadata.as_ref()
+                        let modified = metadata
+                            .as_ref()
                             .and_then(|m| m.modified().ok())
                             .map(chrono::DateTime::<chrono::Utc>::from)
                             .unwrap_or_else(chrono::Utc::now);
@@ -310,7 +319,8 @@ impl PiBridge {
     ///
     /// Returns tool definitions from pi's tool registry.
     pub fn available_tools(&self) -> Vec<ToolSummary> {
-        let cwd = self.working_directory
+        let cwd = self
+            .working_directory
             .clone()
             .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
 
@@ -326,7 +336,8 @@ impl PiBridge {
 
     /// Get a specific tool definition.
     pub fn get_tool(&self, name: &str) -> Option<ToolDefinition> {
-        let cwd = self.working_directory
+        let cwd = self
+            .working_directory
             .clone()
             .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
 
@@ -342,7 +353,8 @@ impl PiBridge {
         };
 
         let guard = handle.lock().await;
-        let state = guard.state()
+        let state = guard
+            .state()
             .await
             .map_err(|e| Error::agent(format!("Failed to get state: {e}")))?;
 
@@ -389,23 +401,24 @@ pub struct SessionState {
 /// Translate pi agent events to HawkTUI events.
 fn translate_pi_event(event: &PiAgentEvent) -> Option<AgentEvent> {
     match event {
-        PiAgentEvent::TurnStart { .. } => {
-            Some(AgentEvent::StreamStart {
-                message_id: uuid::Uuid::new_v4(),
-            })
-        }
+        PiAgentEvent::TurnStart { .. } => Some(AgentEvent::StreamStart {
+            message_id: uuid::Uuid::new_v4(),
+        }),
 
-        PiAgentEvent::MessageUpdate { assistant_message_event, .. } => {
-            translate_message_event(assistant_message_event)
-        }
+        PiAgentEvent::MessageUpdate {
+            assistant_message_event,
+            ..
+        } => translate_message_event(assistant_message_event),
 
-        PiAgentEvent::ToolExecutionStart { tool_call_id, tool_name, args } => {
-            Some(AgentEvent::ToolStart {
-                id: tool_call_id.clone(),
-                name: tool_name.clone(),
-                input: serde_json::to_string_pretty(args).unwrap_or_default(),
-            })
-        }
+        PiAgentEvent::ToolExecutionStart {
+            tool_call_id,
+            tool_name,
+            args,
+        } => Some(AgentEvent::ToolStart {
+            id: tool_call_id.clone(),
+            name: tool_name.clone(),
+            input: serde_json::to_string_pretty(args).unwrap_or_default(),
+        }),
 
         PiAgentEvent::ToolExecutionUpdate { tool_call_id, .. } => {
             // Progress updates - we don't have exact progress, so estimate
@@ -415,19 +428,20 @@ fn translate_pi_event(event: &PiAgentEvent) -> Option<AgentEvent> {
             })
         }
 
-        PiAgentEvent::ToolExecutionEnd { tool_call_id, tool_name: _, result, is_error } => {
-            Some(AgentEvent::ToolEnd {
-                id: tool_call_id.clone(),
-                output: format_tool_output(result),
-                is_error: *is_error,
-            })
-        }
+        PiAgentEvent::ToolExecutionEnd {
+            tool_call_id,
+            tool_name: _,
+            result,
+            is_error,
+        } => Some(AgentEvent::ToolEnd {
+            id: tool_call_id.clone(),
+            output: format_tool_output(result),
+            is_error: *is_error,
+        }),
 
-        PiAgentEvent::TurnEnd { .. } => {
-            Some(AgentEvent::StreamEnd {
-                stop_reason: StopReason::EndTurn,
-            })
-        }
+        PiAgentEvent::TurnEnd { .. } => Some(AgentEvent::StreamEnd {
+            stop_reason: StopReason::EndTurn,
+        }),
 
         PiAgentEvent::AgentEnd { error, .. } => {
             if let Some(err) = error {
@@ -441,13 +455,20 @@ fn translate_pi_event(event: &PiAgentEvent) -> Option<AgentEvent> {
             }
         }
 
-        PiAgentEvent::AutoRetryStart { attempt, max_attempts, error_message, .. } => {
-            Some(AgentEvent::Error {
-                message: format!("Retrying ({attempt}/{max_attempts}): {error_message}"),
-            })
-        }
+        PiAgentEvent::AutoRetryStart {
+            attempt,
+            max_attempts,
+            error_message,
+            ..
+        } => Some(AgentEvent::Error {
+            message: format!("Retrying ({attempt}/{max_attempts}): {error_message}"),
+        }),
 
-        PiAgentEvent::AutoRetryEnd { success, final_error, .. } => {
+        PiAgentEvent::AutoRetryEnd {
+            success,
+            final_error,
+            ..
+        } => {
             if !success {
                 if let Some(err) = final_error {
                     return Some(AgentEvent::Error {
@@ -458,7 +479,11 @@ fn translate_pi_event(event: &PiAgentEvent) -> Option<AgentEvent> {
             None
         }
 
-        PiAgentEvent::ExtensionError { extension_id, error, .. } => {
+        PiAgentEvent::ExtensionError {
+            extension_id,
+            error,
+            ..
+        } => {
             let ext_id = extension_id.as_deref().unwrap_or("unknown");
             Some(AgentEvent::Error {
                 message: format!("Extension {ext_id} error: {error}"),
@@ -477,35 +502,27 @@ fn translate_pi_event(event: &PiAgentEvent) -> Option<AgentEvent> {
 /// Translate assistant message events to HawkTUI events.
 fn translate_message_event(event: &AssistantMessageEvent) -> Option<AgentEvent> {
     match event {
-        AssistantMessageEvent::TextDelta { delta, .. } => {
-            Some(AgentEvent::TextDelta {
-                text: delta.clone(),
-            })
-        }
+        AssistantMessageEvent::TextDelta { delta, .. } => Some(AgentEvent::TextDelta {
+            text: delta.clone(),
+        }),
 
-        AssistantMessageEvent::ThinkingStart { .. } => {
-            Some(AgentEvent::ThinkingStart)
-        }
+        AssistantMessageEvent::ThinkingStart { .. } => Some(AgentEvent::ThinkingStart),
 
-        AssistantMessageEvent::ThinkingDelta { delta, .. } => {
-            Some(AgentEvent::ThinkingDelta {
-                text: delta.clone(),
-            })
-        }
+        AssistantMessageEvent::ThinkingDelta { delta, .. } => Some(AgentEvent::ThinkingDelta {
+            text: delta.clone(),
+        }),
 
-        AssistantMessageEvent::ThinkingEnd { .. } => {
-            Some(AgentEvent::ThinkingEnd)
-        }
+        AssistantMessageEvent::ThinkingEnd { .. } => Some(AgentEvent::ThinkingEnd),
 
-        AssistantMessageEvent::Done { reason, .. } => {
-            Some(AgentEvent::StreamEnd {
-                stop_reason: translate_stop_reason(*reason),
-            })
-        }
+        AssistantMessageEvent::Done { reason, .. } => Some(AgentEvent::StreamEnd {
+            stop_reason: translate_stop_reason(*reason),
+        }),
 
         AssistantMessageEvent::Error { error, .. } => {
             // error is Arc<AssistantMessage>, extract text from content blocks
-            let message = error.content.iter()
+            let message = error
+                .content
+                .iter()
                 .filter_map(|block| {
                     if let ContentBlock::Text(text) = block {
                         Some(text.text.clone())
@@ -516,7 +533,11 @@ fn translate_message_event(event: &AssistantMessageEvent) -> Option<AgentEvent> 
                 .collect::<Vec<_>>()
                 .join("\n");
             Some(AgentEvent::Error {
-                message: if message.is_empty() { "Unknown error".to_string() } else { message },
+                message: if message.is_empty() {
+                    "Unknown error".to_string()
+                } else {
+                    message
+                },
             })
         }
 
@@ -544,15 +565,15 @@ fn translate_stop_reason(reason: PiStopReason) -> StopReason {
 /// Format tool output for display.
 fn format_tool_output(output: &ToolOutput) -> String {
     // ToolOutput has content: Vec<ContentBlock> and is_error: bool
-    let text_parts: Vec<String> = output.content.iter()
-        .filter_map(|block| {
-            match block {
-                ContentBlock::Text(text) => Some(text.text.clone()),
-                _ => None,
-            }
+    let text_parts: Vec<String> = output
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            ContentBlock::Text(text) => Some(text.text.clone()),
+            _ => None,
         })
         .collect();
-    
+
     if text_parts.is_empty() {
         if let Some(details) = &output.details {
             serde_json::to_string_pretty(details).unwrap_or_default()
@@ -599,9 +620,11 @@ mod tests {
 
     #[test]
     fn test_translate_text_delta() {
+        let partial_msg = Arc::new(AssistantMessage::default());
         let event = AssistantMessageEvent::TextDelta {
             content_index: 0,
             delta: "Hello".to_string(),
+            partial: partial_msg,
         };
         let result = translate_message_event(&event);
         assert!(matches!(result, Some(AgentEvent::TextDelta { text }) if text == "Hello"));
@@ -609,12 +632,21 @@ mod tests {
 
     #[test]
     fn test_translate_thinking_events() {
-        let start = AssistantMessageEvent::ThinkingStart { content_index: 0 };
-        assert!(matches!(translate_message_event(&start), Some(AgentEvent::ThinkingStart)));
+        let partial_msg = Arc::new(AssistantMessage::default());
+
+        let start = AssistantMessageEvent::ThinkingStart {
+            content_index: 0,
+            partial: partial_msg.clone(),
+        };
+        assert!(matches!(
+            translate_message_event(&start),
+            Some(AgentEvent::ThinkingStart)
+        ));
 
         let delta = AssistantMessageEvent::ThinkingDelta {
             content_index: 0,
             delta: "thinking...".to_string(),
+            partial: partial_msg.clone(),
         };
         assert!(matches!(
             translate_message_event(&delta),
@@ -624,7 +656,11 @@ mod tests {
         let end = AssistantMessageEvent::ThinkingEnd {
             content_index: 0,
             content: "done".to_string(),
+            partial: partial_msg,
         };
-        assert!(matches!(translate_message_event(&end), Some(AgentEvent::ThinkingEnd)));
+        assert!(matches!(
+            translate_message_event(&end),
+            Some(AgentEvent::ThinkingEnd)
+        ));
     }
 }
