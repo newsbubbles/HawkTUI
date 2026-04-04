@@ -478,10 +478,48 @@ impl App {
         self.state.streaming.message_id = Some(assistant_msg.id);
         self.state.conversation.messages.push(assistant_msg);
 
-        // Pi agent integration pending - simulate response for now.
-        // When pi_agent_rust is available, this will call bridge.send_message()
-        // and stream chunks back via the streaming state.
-        self.simulate_response(message).await;
+        // Use PiBridge to send message and get response
+        let msg_idx = self.state.conversation.messages.len() - 1;
+        
+        let result = self.bridge.send_message(message, |event| {
+            tracing::debug!(?event, "Agent event received");
+        }).await;
+
+        match result {
+            Ok(response) => {
+                // Extract text from assistant message content blocks
+                let text = response
+                    .content
+                    .iter()
+                    .filter_map(|block| match block {
+                        pi::model::ContentBlock::Text(tc) => Some(tc.text.clone()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                
+                // Update the assistant message with the full response
+                if let Some(msg) = self.state.conversation.messages.get_mut(msg_idx) {
+                    msg.content = text;
+                    msg.is_streaming = false;
+                }
+                
+                // End streaming state
+                self.state.streaming.is_active = false;
+                self.state.mode = AppMode::Normal;
+                self.state.status.connection = ConnectionStatus::Connected;
+            }
+            Err(e) => {
+                // Handle error
+                if let Some(msg) = self.state.conversation.messages.get_mut(msg_idx) {
+                    msg.content = format!("Error: {e}");
+                    msg.is_streaming = false;
+                }
+                self.state.streaming.is_active = false;
+                self.state.mode = AppMode::Normal;
+                self.state.status.connection = ConnectionStatus::Error;
+            }
+        }
 
         Ok(())
     }

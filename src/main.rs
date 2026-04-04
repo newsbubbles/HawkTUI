@@ -102,10 +102,40 @@ async fn main() -> anyhow::Result<()> {
     // Print mode - single shot without TUI
     if cli.print {
         if let Some(msg) = &cli.message {
+            use hawktui::providers::PiBridge;
+            use hawktui::core::error::Result;
+            
             println!("\n\x1b[2m[Print mode - sending message...]\x1b[0m\n");
             println!("\x1b[1;32mYou:\x1b[0m {msg}");
             println!("\n\x1b[1;36m🤖 Assistant:\x1b[0m");
-            println!("\x1b[2m(Agent integration pending - this is a UI scaffold)\x1b[0m\n");
+            
+            async fn run_print_mode(msg: &str, model: Option<String>, provider: Option<String>) -> Result<String> {
+                let mut bridge = PiBridge::new(model, provider);
+                bridge.connect().await?;
+                
+                let response = bridge.send_message(msg, |event| {
+                    // In print mode, we could print chunks as they arrive
+                    tracing::debug!(?event, "Agent event");
+                }).await?;
+                
+                // Extract text from response
+                let text = response
+                    .content
+                    .iter()
+                    .filter_map(|block| match block {
+                        pi::model::ContentBlock::Text(tc) => Some(tc.text.clone()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                
+                Ok(text)
+            }
+            
+            match run_print_mode(msg, cli.model, cli.provider).await {
+                Ok(response) => println!("{response}\n"),
+                Err(e) => eprintln!("\x1b[31mError: {e}\x1b[0m\n"),
+            }
         } else {
             eprintln!("\x1b[31mError: Print mode requires a message\x1b[0m");
             std::process::exit(1);
