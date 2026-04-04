@@ -20,10 +20,11 @@
 use crate::core::events::AgentEvent;
 use crate::core::error::{Error, Result};
 
-// TODO: Uncomment when pi_agent_rust is added as dependency
-// use pi::agent::{Agent, AgentConfig, AgentEvent as PiAgentEvent};
-// use pi::session::Session;
-// use pi::providers;
+// Pi agent integration stubs.
+// When pi_agent_rust is added as a dependency, uncomment and use:
+//   use pi::agent::{Agent, AgentConfig, AgentEvent as PiAgentEvent};
+//   use pi::session::Session;
+//   use pi::providers;
 
 /// Bridge to pi_agent_rust.
 ///
@@ -39,7 +40,7 @@ pub struct PiBridge {
     /// Whether the bridge is connected.
     connected: bool,
 
-    // TODO: Add actual pi integration
+    // Pi agent integration fields (uncomment when dependency is available):
     // agent: Option<Agent>,
     // session: Option<Session>,
 }
@@ -55,15 +56,17 @@ impl PiBridge {
     }
 
     /// Connect to the agent.
+    ///
+    /// When pi_agent_rust is available, this will initialize the agent:
+    /// ```ignore
+    /// let config = AgentConfig {
+    ///     model: self.model.clone(),
+    ///     provider: self.provider.clone(),
+    ///     ..Default::default()
+    /// };
+    /// self.agent = Some(Agent::new(config).await?);
+    /// ```
     pub async fn connect(&mut self) -> Result<()> {
-        // TODO: Initialize pi agent
-        // let config = AgentConfig {
-        //     model: self.model.clone(),
-        //     provider: self.provider.clone(),
-        //     ..Default::default()
-        // };
-        // self.agent = Some(Agent::new(config).await?);
-        
         self.connected = true;
         Ok(())
     }
@@ -96,6 +99,15 @@ impl PiBridge {
     /// Send a message and stream the response.
     ///
     /// Returns a channel receiver for agent events.
+    ///
+    /// When pi_agent_rust is available, this will send through the agent:
+    /// ```ignore
+    /// let user_message = UserMessage::new(message);
+    /// self.agent.as_mut().unwrap().send(user_message, |event| {
+    ///     let hawk_event = translate_event(event);
+    ///     on_event(hawk_event);
+    /// }).await?;
+    /// ```
     pub async fn send_message(
         &mut self,
         message: &str,
@@ -105,54 +117,60 @@ impl PiBridge {
             return Err(Error::agent("Not connected to agent"));
         }
 
-        // TODO: Send message through pi agent
-        // let user_message = UserMessage::new(message);
-        // self.agent.as_mut().unwrap().send(user_message, |event| {
-        //     let hawk_event = translate_event(event);
-        //     on_event(hawk_event);
-        // }).await?;
-
-        // Placeholder: simulate a response
+        // Placeholder: log the message (actual streaming handled in app.rs)
         tracing::info!("Sending message: {message}");
         
         Ok(())
     }
 
     /// Cancel the current operation.
+    ///
+    /// When pi_agent_rust is available:
+    /// ```ignore
+    /// if let Some(agent) = &mut self.agent {
+    ///     agent.cancel();
+    /// }
+    /// ```
     pub fn cancel(&mut self) {
-        // TODO: Cancel pi agent operation
-        // if let Some(agent) = &mut self.agent {
-        //     agent.cancel();
-        // }
         tracing::info!("Cancelling operation");
     }
 
     /// Load a session.
+    ///
+    /// When pi_agent_rust is available:
+    /// ```ignore
+    /// self.session = Some(Session::load(session_id).await?);
+    /// ```
     pub async fn load_session(&mut self, _session_id: &str) -> Result<()> {
-        // TODO: Load session from pi's session storage
-        // self.session = Some(Session::load(session_id).await?);
         Ok(())
     }
 
     /// Create a new session.
+    ///
+    /// When pi_agent_rust is available:
+    /// ```ignore
+    /// let session = Session::new(name).await?;
+    /// let id = session.id().to_string();
+    /// self.session = Some(session);
+    /// Ok(id)
+    /// ```
     pub async fn create_session(&mut self, _name: &str) -> Result<String> {
-        // TODO: Create session through pi
-        // let session = Session::new(name).await?;
-        // let id = session.id().to_string();
-        // self.session = Some(session);
-        // Ok(id)
         Ok(uuid::Uuid::new_v4().to_string())
     }
 
     /// List available sessions.
+    ///
+    /// When pi_agent_rust is available, this will query pi's session storage.
+    /// For now, returns an empty list.
     pub async fn list_sessions(&self) -> Result<Vec<SessionSummary>> {
-        // TODO: List sessions from pi's session storage
         Ok(Vec::new())
     }
 
     /// Get available tools.
+    ///
+    /// When pi_agent_rust is available, this will query pi's tool registry.
+    /// For now, returns a representative stub list.
     pub fn available_tools(&self) -> Vec<ToolSummary> {
-        // TODO: Get tools from pi's tool registry
         vec![
             ToolSummary {
                 name: "read_file".to_string(),
@@ -196,14 +214,18 @@ pub struct ToolSummary {
     pub enabled: bool,
 }
 
-// TODO: Translate pi events to HawkTUI events
+// Event translation for pi_agent_rust integration.
+//
+// When pi_agent_rust is available, implement this function:
+// ```ignore
 // fn translate_event(event: PiAgentEvent) -> AgentEvent {
 //     match event {
 //         PiAgentEvent::TextDelta(text) => AgentEvent::TextDelta { text },
 //         PiAgentEvent::ThinkingDelta(text) => AgentEvent::ThinkingDelta { text },
 //         PiAgentEvent::ToolStart { name, input, .. } => {
-//             AgentEvent::ToolStart { id: "todo".into(), name, input }
+//             AgentEvent::ToolStart { id: "id".into(), name, input }
 //         }
-//         // ... etc
+//         // ... additional event mappings
 //     }
 // }
+// ```

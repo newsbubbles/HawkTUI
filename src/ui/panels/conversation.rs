@@ -1,31 +1,257 @@
 //! Conversation panel for displaying chat messages.
 
+use pulldown_cmark::{Event, Parser, Tag, TagEnd, CodeBlockKind};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Modifier, Style},
+    style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget, Wrap},
 };
 use unicode_width::UnicodeWidthStr;
 
-use crate::core::state::{Conversation, Message, MessageRole};
+use crate::core::state::{Conversation, Message, MessageRole, StreamingState};
 use crate::ui::themes::Theme;
+use crate::ui::widgets::{StreamingIndicator, ThinkingIndicator};
 
 /// Conversation panel widget.
 pub struct ConversationPanel<'a> {
     conversation: &'a Conversation,
+    streaming: &'a StreamingState,
     theme: &'a Theme,
     focused: bool,
+    frame: usize,
 }
 
 impl<'a> ConversationPanel<'a> {
-    pub fn new(conversation: &'a Conversation, theme: &'a Theme, focused: bool) -> Self {
+    pub fn new(
+        conversation: &'a Conversation,
+        streaming: &'a StreamingState,
+        theme: &'a Theme,
+        focused: bool,
+        frame: usize,
+    ) -> Self {
         Self {
             conversation,
+            streaming,
             theme,
             focused,
+            frame,
         }
+    }
+
+    /// Render markdown content to styled lines.
+    fn render_markdown(&self, content: &str, content_width: usize) -> Vec<Line<'static>> {
+        let mut lines: Vec<Line<'static>> = Vec::new();
+        let parser = Parser::new(content);
+        
+        // State tracking
+        let mut current_spans: Vec<Span<'static>> = Vec::new();
+        let mut in_code_block = false;
+        #[allow(unused_assignments)]
+        let mut code_block_lang: Option<String> = None;
+        let mut is_bold = false;
+        let mut is_italic = false;
+        let _is_code = false; // Reserved for future inline code state tracking
+        let mut heading_level: Option<u8> = None;
+        
+        // Code block background color
+        let code_bg = Color::Rgb(40, 42, 54); // Dark background for code
+        let code_fg = Theme::parse_color(&self.theme.syntax.string);
+        let inline_code_bg = Color::Rgb(50, 52, 64);
+        
+        for event in parser {
+            match event {
+                Event::Start(Tag::Heading { level, .. }) => {
+                    heading_level = Some(level as u8);
+                }
+                Event::End(TagEnd::Heading(_)) => {
+                    // Flush heading line with special styling
+                    if !current_spans.is_empty() {
+                        let mut heading_spans = vec![Span::raw("  ")];
+                        let level = heading_level.unwrap_or(1);
+                        let prefix = "#".repeat(level as usize);
+                        heading_spans.push(Span::styled(
+                            format!("{prefix} "),
+                            Style::default().fg(self.theme.accent()),
+                        ));
+                        for span in current_spans.drain(..) {
+                            heading_spans.push(Span::styled(
+                                span.content.to_string(),
+                                Style::default()
+                                    .fg(self.theme.accent())
+                                    .add_modifier(Modifier::BOLD),
+                            ));
+                        }
+                        lines.push(Line::from(heading_spans));
+                    }
+                    heading_level = None;
+                }
+                Event::Start(Tag::CodeBlock(kind)) => {
+                    in_code_block = true;
+                    code_block_lang = match kind {
+                        CodeBlockKind::Fenced(lang) => {
+                            let lang_str = lang.to_string();
+                            if lang_str.is_empty() { None } else { Some(lang_str) }
+                        }
+                        CodeBlockKind::Indented => None,
+                    };
+                    // Flush any pending content
+                    if !current_spans.is_empty() {
+                        let mut line_spans = vec![Span::raw("  ")];
+                        line_spans.extend(current_spans.drain(..));
+                        lines.push(Line::from(line_spans));
+                    }
+                    // Code block header
+                    let lang_display = code_block_lang.as_deref().unwrap_or("code");
+                    lines.push(Line::from(vec![
+                        Span::raw("  "),
+                        Span::styled(
+                            format!("┌─ {lang_display} "),
+                            Style::default().fg(self.theme.muted()),
+                        ),
+                        Span::styled(
+                            "─".repeat(content_width.saturating_sub(lang_display.len() + 6)),
+                            Style::default().fg(self.theme.muted()),
+                        ),
+                    ]));
+                }
+                Event::End(TagEnd::CodeBlock) => {
+                    in_code_block = false;
+                    // Code block footer
+                    lines.push(Line::from(vec![
+                        Span::raw("  "),
+                        Span::styled(
+                            format!("└{}", "─".repeat(content_width.saturating_sub(3))),
+                            Style::default().fg(self.theme.muted()),
+                        ),
+                    ]));
+                    code_block_lang = None; // Reset for next code block
+                    let _ = &code_block_lang; // Suppress unused warning
+                }
+                Event::Start(Tag::Strong) => {
+                    is_bold = true;
+                }
+                Event::End(TagEnd::Strong) => {
+                    is_bold = false;
+                }
+                Event::Start(Tag::Emphasis) => {
+                    is_italic = true;
+                }
+                Event::End(TagEnd::Emphasis) => {
+                    is_italic = false;
+                }
+                Event::Code(code) => {
+                    // Inline code
+                    current_spans.push(Span::styled(
+                        format!(" {code} "),
+                        Style::default()
+                            .fg(code_fg)
+                            .bg(inline_code_bg),
+                    ));
+                }
+                Event::Text(text) => {
+                    if in_code_block {
+                        // Render code block lines
+                        for code_line in text.lines() {
+                            lines.push(Line::from(vec![
+                                Span::raw("  "),
+                                Span::styled(
+                                    "│ ",
+                                    Style::default().fg(self.theme.muted()),
+                                ),
+                                Span::styled(
+                                    code_line.to_string(),
+                                    Style::default().fg(code_fg).bg(code_bg),
+                                ),
+                            ]));
+                        }
+                    } else {
+                        // Regular text with styling
+                        let mut style = Style::default().fg(self.theme.fg());
+                        if is_bold {
+                            style = style.add_modifier(Modifier::BOLD);
+                        }
+                        if is_italic {
+                            style = style.add_modifier(Modifier::ITALIC);
+                        }
+                        if heading_level.is_some() {
+                            style = style.fg(self.theme.accent()).add_modifier(Modifier::BOLD);
+                        }
+                        current_spans.push(Span::styled(text.to_string(), style));
+                    }
+                }
+                Event::SoftBreak | Event::HardBreak => {
+                    if !in_code_block && !current_spans.is_empty() {
+                        // Wrap and flush current line
+                        let full_text: String = current_spans.iter().map(|s| s.content.as_ref()).collect();
+                        let wrapped = textwrap::wrap(&full_text, content_width);
+                        for wrapped_line in wrapped {
+                            lines.push(Line::from(vec![
+                                Span::raw("  "),
+                                Span::styled(wrapped_line.to_string(), Style::default().fg(self.theme.fg())),
+                            ]));
+                        }
+                        current_spans.clear();
+                    }
+                }
+                Event::Start(Tag::Paragraph) => {
+                    // Start fresh paragraph
+                }
+                Event::End(TagEnd::Paragraph) => {
+                    // Flush paragraph
+                    if !current_spans.is_empty() {
+                        let full_text: String = current_spans.iter().map(|s| s.content.as_ref()).collect();
+                        let wrapped = textwrap::wrap(&full_text, content_width);
+                        
+                        // Preserve styling for simple cases
+                        if current_spans.len() == 1 {
+                            for wrapped_line in wrapped {
+                                let mut line_spans = vec![Span::raw("  ")];
+                                line_spans.push(Span::styled(
+                                    wrapped_line.to_string(),
+                                    current_spans[0].style,
+                                ));
+                                lines.push(Line::from(line_spans));
+                            }
+                        } else {
+                            // Complex styling - just use the collected spans
+                            let mut line_spans = vec![Span::raw("  ")];
+                            line_spans.extend(current_spans.drain(..));
+                            lines.push(Line::from(line_spans));
+                        }
+                        current_spans.clear();
+                    }
+                    lines.push(Line::raw(""));
+                }
+                Event::Start(Tag::List(_)) | Event::End(TagEnd::List(_)) => {
+                    // Lists handled via items
+                }
+                Event::Start(Tag::Item) => {
+                    current_spans.push(Span::styled(
+                        "• ",
+                        Style::default().fg(self.theme.accent()),
+                    ));
+                }
+                Event::End(TagEnd::Item) => {
+                    if !current_spans.is_empty() {
+                        let mut line_spans = vec![Span::raw("  ")];
+                        line_spans.extend(current_spans.drain(..));
+                        lines.push(Line::from(line_spans));
+                    }
+                }
+                _ => {}
+            }
+        }
+        
+        // Flush any remaining content
+        if !current_spans.is_empty() {
+            let mut line_spans = vec![Span::raw("  ")];
+            line_spans.extend(current_spans);
+            lines.push(Line::from(line_spans));
+        }
+        
+        lines
     }
 
     /// Render a single message.
@@ -91,37 +317,8 @@ impl<'a> ConversationPanel<'a> {
             lines.push(Line::raw(""));
         }
 
-        // Message content
-        for line in message.content.lines() {
-            // Check if this is a code block
-            if line.starts_with("```") {
-                lines.push(Line::from(vec![
-                    Span::raw("  "),
-                    Span::styled(
-                        line.to_string(),
-                        Style::default().fg(Theme::parse_color(&self.theme.syntax.keyword)),
-                    ),
-                ]));
-            } else if line.starts_with("  ") || line.starts_with("\t") {
-                // Code content
-                lines.push(Line::from(vec![
-                    Span::raw("  "),
-                    Span::styled(
-                        line.to_string(),
-                        Style::default().fg(Theme::parse_color(&self.theme.syntax.string)),
-                    ),
-                ]));
-            } else {
-                // Regular text - wrap long lines
-                let wrapped = textwrap::wrap(line, content_width);
-                for wrapped_line in wrapped {
-                    lines.push(Line::from(vec![
-                        Span::raw("  "),
-                        Span::styled(wrapped_line.to_string(), Style::default().fg(self.theme.fg())),
-                    ]));
-                }
-            }
-        }
+        // Message content - parse markdown
+        lines.extend(self.render_markdown(&message.content, content_width));
 
         // Tool calls
         for tool_call in &message.tool_calls {
@@ -183,8 +380,28 @@ impl Widget for ConversationPanel<'_> {
             all_lines.extend(self.render_message(message, inner.width));
         }
 
+        // Render streaming indicators at the bottom if streaming is active
+        if self.streaming.is_active {
+            // Create a rect for the indicator (same for both types)
+            let indicator_area = Rect {
+                x: inner.x + 2,
+                y: inner.y + inner.height.saturating_sub(1),
+                width: inner.width.saturating_sub(4),
+                height: 1,
+            };
+
+            // Show thinking indicator if thinking is visible and no tokens yet
+            if self.streaming.thinking_visible && self.streaming.tokens_streamed == 0 {
+                ThinkingIndicator::new(self.frame, self.theme).render(indicator_area, buf);
+            } else {
+                // Show streaming indicator with token count
+                StreamingIndicator::new(self.streaming.tokens_streamed, self.frame, self.theme)
+                    .render(indicator_area, buf);
+            }
+        }
+
         // Empty state
-        if all_lines.is_empty() {
+        if all_lines.is_empty() && !self.streaming.is_active {
             all_lines.push(Line::from(vec![
                 Span::styled(
                     "  🦅 Welcome to HawkTUI!",

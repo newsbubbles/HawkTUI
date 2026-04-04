@@ -10,20 +10,31 @@ use ratatui::{
 
 use crate::core::state::ToolsState;
 use crate::ui::themes::Theme;
+use crate::ui::widgets::Spinner;
 
 /// Tools panel widget.
 pub struct ToolsPanel<'a> {
     tools_state: &'a ToolsState,
+    selected_index: Option<usize>,
     theme: &'a Theme,
     focused: bool,
+    frame: usize,
 }
 
 impl<'a> ToolsPanel<'a> {
-    pub fn new(tools_state: &'a ToolsState, theme: &'a Theme, focused: bool) -> Self {
+    pub fn new(
+        tools_state: &'a ToolsState,
+        selected_index: Option<usize>,
+        theme: &'a Theme,
+        focused: bool,
+        frame: usize,
+    ) -> Self {
         Self {
             tools_state,
+            selected_index,
             theme,
             focused,
+            frame,
         }
     }
 }
@@ -68,8 +79,12 @@ impl Widget for ToolsPanel<'_> {
                     .map(|p| format!(" {:.0}%", p * 100.0))
                     .unwrap_or_default();
 
+                // Use animated spinner instead of static icon
+                let spinner = Spinner::new(self.frame);
+                let spinner_char = spinner.current_frame();
+
                 items.push(ListItem::new(Line::from(vec![
-                    Span::styled("⚡ ", Style::default().fg(self.theme.warning())),
+                    Span::styled(format!("{spinner_char} "), Style::default().fg(self.theme.warning())),
                     Span::styled(&tool.name, Style::default().fg(self.theme.fg())),
                     Span::styled(progress, Style::default().fg(self.theme.muted())),
                 ])));
@@ -87,16 +102,33 @@ impl Widget for ToolsPanel<'_> {
                     .add_modifier(Modifier::BOLD),
             )])));
 
-            for tool in &self.tools_state.available {
+            // Note: header_offset would be used for scroll calculations if needed
+            // let _header_offset = if self.tools_state.executing.is_empty() { 1 } else {
+            //     self.tools_state.executing.len() + 3
+            // };
+
+            for (idx, tool) in self.tools_state.available.iter().enumerate() {
+                let is_selected = self.focused && self.selected_index == Some(idx);
+                
                 let (icon, color) = if tool.enabled {
                     ("✓", self.theme.success())
                 } else {
                     ("○", self.theme.muted())
                 };
 
+                let selector = if is_selected { "▶ " } else { "  " };
+                let name_style = if is_selected {
+                    Style::default()
+                        .fg(self.theme.accent())
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(self.theme.fg())
+                };
+
                 items.push(ListItem::new(Line::from(vec![
+                    Span::styled(selector, Style::default().fg(self.theme.accent())),
                     Span::styled(format!("{icon} "), Style::default().fg(color)),
-                    Span::styled(&tool.name, Style::default().fg(self.theme.fg())),
+                    Span::styled(&tool.name, name_style),
                 ])));
             }
         }

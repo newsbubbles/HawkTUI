@@ -25,6 +25,9 @@ pub struct AppState {
     /// List of sessions.
     pub sessions: Vec<SessionInfo>,
 
+    /// Selected session index in the list (for UI navigation).
+    pub selected_session_index: Option<usize>,
+
     /// Current session ID.
     pub current_session_id: Option<Uuid>,
 
@@ -58,6 +61,7 @@ impl Default for AppState {
             active_panel: Panel::Input,
             conversation: Conversation::default(),
             sessions: Vec::new(),
+            selected_session_index: None,
             current_session_id: None,
             input: InputState::default(),
             status: StatusInfo::default(),
@@ -224,6 +228,19 @@ impl Message {
             thinking: None,
         }
     }
+
+    /// Create a new system message.
+    pub fn system(content: impl Into<String>) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            role: MessageRole::System,
+            content: content.into(),
+            timestamp: Utc::now(),
+            is_streaming: false,
+            tool_calls: Vec::new(),
+            thinking: None,
+        }
+    }
 }
 
 /// Message role.
@@ -271,7 +288,7 @@ pub struct InputState {
     /// Current input text.
     pub text: String,
 
-    /// Cursor position.
+    /// Cursor position (character index, not byte index).
     pub cursor: usize,
 
     /// Input history.
@@ -350,6 +367,9 @@ pub struct ToolsState {
 
     /// Currently executing tools.
     pub executing: Vec<ExecutingTool>,
+
+    /// Selected tool index (for UI navigation).
+    pub selected_index: Option<usize>,
 
     /// Scroll position.
     pub scroll_offset: u16,

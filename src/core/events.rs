@@ -204,6 +204,30 @@ pub enum Action {
     /// Continue last session.
     ContinueSession,
 
+    /// Select next session in list.
+    SelectNextSession,
+
+    /// Select previous session in list.
+    SelectPrevSession,
+
+    /// Switch to selected session.
+    SwitchToSelectedSession,
+
+    /// Refresh sessions list.
+    RefreshSessions,
+
+    /// Select next tool in list.
+    SelectNextTool,
+
+    /// Select previous tool in list.
+    SelectPrevTool,
+
+    /// Toggle selected tool enabled/disabled.
+    ToggleSelectedTool,
+
+    /// Refresh tools list.
+    RefreshTools,
+
     /// Copy selection.
     Copy,
 
@@ -278,6 +302,7 @@ pub fn map_key_to_action(
     key: KeyEvent,
     mode: super::state::AppMode,
     overlay: Option<&super::state::Overlay>,
+    active_panel: Option<super::state::Panel>,
 ) -> Action {
     use super::state::AppMode;
 
@@ -312,25 +337,48 @@ pub fn map_key_to_action(
 
     // Mode-specific handling
     match mode {
-        AppMode::Normal | AppMode::Insert => match key.code {
-            KeyCode::Esc => Action::CloseOverlay,
-            KeyCode::F(1) => Action::ToggleHelp,
-            KeyCode::F(2) => Action::ToggleLayout,
-            KeyCode::Tab => Action::NextPanel,
-            KeyCode::BackTab => Action::PrevPanel,
-            KeyCode::Char(c) => Action::InsertChar(c),
-            KeyCode::Backspace => Action::Backspace,
-            KeyCode::Delete => Action::DeleteChar,
-            KeyCode::Left => Action::CursorLeft,
-            KeyCode::Right => Action::CursorRight,
-            KeyCode::Home => Action::CursorHome,
-            KeyCode::End => Action::CursorEnd,
-            KeyCode::Up => Action::HistoryPrev,
-            KeyCode::Down => Action::HistoryNext,
-            KeyCode::PageUp => Action::ScrollUp(10),
-            KeyCode::PageDown => Action::ScrollDown(10),
-            _ => Action::None,
-        },
+        AppMode::Normal | AppMode::Insert => {
+            // Handle panel-specific keys first
+            if matches!(active_panel, Some(super::state::Panel::Sessions)) {
+                match key.code {
+                    KeyCode::Up | KeyCode::Char('k') => return Action::SelectPrevSession,
+                    KeyCode::Down | KeyCode::Char('j') => return Action::SelectNextSession,
+                    KeyCode::Enter => return Action::SwitchToSelectedSession,
+                    KeyCode::Char('r') => return Action::RefreshSessions,
+                    _ => {}
+                }
+            }
+
+            if matches!(active_panel, Some(super::state::Panel::Tools)) {
+                match key.code {
+                    KeyCode::Up | KeyCode::Char('k') => return Action::SelectPrevTool,
+                    KeyCode::Down | KeyCode::Char('j') => return Action::SelectNextTool,
+                    KeyCode::Enter | KeyCode::Char(' ') => return Action::ToggleSelectedTool,
+                    KeyCode::Char('r') => return Action::RefreshTools,
+                    _ => {}
+                }
+            }
+
+            match key.code {
+                KeyCode::Esc => Action::CloseOverlay,
+                KeyCode::F(1) => Action::ToggleHelp,
+                KeyCode::F(2) => Action::ToggleLayout,
+                KeyCode::Tab => Action::NextPanel,
+                KeyCode::BackTab => Action::PrevPanel,
+                KeyCode::Char(c) => Action::InsertChar(c),
+                KeyCode::Backspace => Action::Backspace,
+                KeyCode::Delete => Action::DeleteChar,
+                KeyCode::Left => Action::CursorLeft,
+                KeyCode::Right => Action::CursorRight,
+                KeyCode::Home => Action::CursorHome,
+                KeyCode::End => Action::CursorEnd,
+                KeyCode::Up => Action::HistoryPrev,
+                KeyCode::Down => Action::HistoryNext,
+                KeyCode::PageUp => Action::ScrollUp(10),
+                KeyCode::PageDown => Action::ScrollDown(10),
+                _ => Action::None,
+            }
+        }
         AppMode::Command => match key.code {
             KeyCode::Esc => Action::CloseOverlay,
             KeyCode::Enter => Action::None, // Command execution handled separately

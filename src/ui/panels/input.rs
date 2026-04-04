@@ -7,6 +7,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Widget},
 };
+use unicode_width::UnicodeWidthStr;
 
 use crate::core::state::{AppMode, InputState, VimState};
 use crate::ui::themes::Theme;
@@ -88,11 +89,18 @@ impl Widget for InputPanel<'_> {
 
         // Render input text with cursor
         let text = &self.input.text;
-        let cursor_pos = self.input.cursor;
+        let cursor_pos = self.input.cursor; // This is now a character index
 
-        // Build the text with cursor
-        let (before_cursor, at_cursor, after_cursor) = if cursor_pos < text.len() {
-            let (before, rest) = text.split_at(cursor_pos);
+        // Build the text with cursor - using character indexing
+        let char_count = text.chars().count();
+        let (before_cursor, at_cursor, after_cursor) = if cursor_pos < char_count {
+            // Convert char index to byte index for splitting
+            let byte_pos = text
+                .char_indices()
+                .nth(cursor_pos)
+                .map(|(idx, _)| idx)
+                .unwrap_or(text.len());
+            let (before, rest) = text.split_at(byte_pos);
             let mut chars = rest.chars();
             let cursor_char = chars.next().unwrap_or(' ');
             (before, cursor_char, chars.as_str())
@@ -142,7 +150,7 @@ impl Widget for InputPanel<'_> {
         // Right-side indicators
         let indicators = format_indicators(&self.input.text, self.theme);
         if !indicators.is_empty() && inner.width > 20 {
-            let indicator_width = indicators.iter().map(|s| s.content.len()).sum::<usize>() + 2;
+            let indicator_width: usize = indicators.iter().map(|s| s.content.width()).sum::<usize>() + 2;
             let x = inner.x + inner.width - indicator_width as u16;
             let indicator_line = Line::from(indicators);
             buf.set_line(x, inner.y, &indicator_line, indicator_width as u16);

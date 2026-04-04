@@ -168,30 +168,30 @@ fn test_event_creation() {
 #[test]
 fn test_key_to_action_normal_mode() {
     let key = crossterm::event::KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE);
-    let action = map_key_to_action(key, AppMode::Normal, None);
+    let action = map_key_to_action(key, AppMode::Normal, None, None);
     assert_eq!(action, Action::ToggleHelp);
     
     let key = crossterm::event::KeyEvent::new(KeyCode::F(2), KeyModifiers::NONE);
-    let action = map_key_to_action(key, AppMode::Normal, None);
+    let action = map_key_to_action(key, AppMode::Normal, None, None);
     assert_eq!(action, Action::ToggleLayout);
     
     let key = crossterm::event::KeyEvent::new(KeyCode::Tab, KeyModifiers::NONE);
-    let action = map_key_to_action(key, AppMode::Normal, None);
+    let action = map_key_to_action(key, AppMode::Normal, None, None);
     assert_eq!(action, Action::NextPanel);
 }
 
 #[test]
 fn test_key_to_action_ctrl_shortcuts() {
     let key = crossterm::event::KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
-    let action = map_key_to_action(key, AppMode::Normal, None);
+    let action = map_key_to_action(key, AppMode::Normal, None, None);
     assert_eq!(action, Action::Quit);
     
     let key = crossterm::event::KeyEvent::new(KeyCode::Char('l'), KeyModifiers::CONTROL);
-    let action = map_key_to_action(key, AppMode::Normal, None);
+    let action = map_key_to_action(key, AppMode::Normal, None, None);
     assert_eq!(action, Action::ClearScreen);
     
     let key = crossterm::event::KeyEvent::new(KeyCode::Char('p'), KeyModifiers::CONTROL);
-    let action = map_key_to_action(key, AppMode::Normal, None);
+    let action = map_key_to_action(key, AppMode::Normal, None, None);
     assert_eq!(action, Action::OpenCommandPalette);
 }
 
@@ -199,7 +199,7 @@ fn test_key_to_action_ctrl_shortcuts() {
 fn test_key_to_action_streaming_mode() {
     // Ctrl+C should cancel in streaming mode, not quit
     let key = crossterm::event::KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL);
-    let action = map_key_to_action(key, AppMode::Streaming, None);
+    let action = map_key_to_action(key, AppMode::Streaming, None, None);
     assert_eq!(action, Action::Cancel);
 }
 
@@ -209,7 +209,7 @@ fn test_key_to_action_with_overlay() {
     
     // Esc should close overlay
     let key = crossterm::event::KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE);
-    let action = map_key_to_action(key, AppMode::Normal, Some(&overlay));
+    let action = map_key_to_action(key, AppMode::Normal, Some(&overlay), None);
     assert_eq!(action, Action::CloseOverlay);
 }
 
@@ -266,18 +266,18 @@ use ratatui::style::Color;
 
 #[test]
 fn test_theme_by_name() {
-    let dark = Theme::by_name("hawk-dark");
+    let dark = Theme::by_name("hawk-dark").expect("hawk-dark theme should exist");
     assert_eq!(dark.meta.name, "Hawk Dark");
     
-    let light = Theme::by_name("hawk-light");
+    let light = Theme::by_name("hawk-light").expect("hawk-light theme should exist");
     assert_eq!(light.meta.name, "Hawk Light");
     
-    let cyber = Theme::by_name("cyberpunk");
+    let cyber = Theme::by_name("cyberpunk").expect("cyberpunk theme should exist");
     assert_eq!(cyber.meta.name, "Cyberpunk");
     
-    // Unknown defaults to dark
+    // Unknown returns None
     let unknown = Theme::by_name("unknown");
-    assert_eq!(unknown.meta.name, "Hawk Dark");
+    assert!(unknown.is_none(), "Unknown theme name should return None");
 }
 
 #[test]

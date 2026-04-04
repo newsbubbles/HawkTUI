@@ -146,12 +146,24 @@ impl Theme {
     }
 
     /// Get a theme by name.
-    pub fn by_name(name: &str) -> Self {
+    /// Returns `Some(Theme)` if the name is valid, `None` otherwise.
+    pub fn by_name(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
-            "hawk-light" | "light" => Self::hawk_light(),
-            "cyberpunk" | "cyber" => Self::cyberpunk(),
-            _ => Self::hawk_dark(),
+            "hawk-dark" | "dark" | "default" => Some(Self::hawk_dark()),
+            "hawk-light" | "light" => Some(Self::hawk_light()),
+            "cyberpunk" | "cyber" => Some(Self::cyberpunk()),
+            _ => None,
         }
+    }
+
+    /// Get a theme by name, falling back to hawk_dark for unknown names.
+    pub fn by_name_or_default(name: &str) -> Self {
+        Self::by_name(name).unwrap_or_else(Self::hawk_dark)
+    }
+
+    /// List available theme names.
+    pub const fn available_themes() -> &'static [&'static str] {
+        &["hawk-dark", "hawk-light", "cyberpunk"]
     }
 
     /// Parse a hex color to ratatui Color.

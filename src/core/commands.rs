@@ -144,6 +144,13 @@ pub static COMMANDS: &[SlashCommand] = &[
         usage: "/vim",
         takes_args: false,
     },
+    SlashCommand {
+        name: "shortcuts",
+        aliases: &["keys", "keybindings"],
+        description: "Show keyboard shortcuts",
+        usage: "/shortcuts",
+        takes_args: false,
+    },
 ];
 
 /// Parsed command.
