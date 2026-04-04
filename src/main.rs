@@ -45,7 +45,7 @@ struct Cli {
     verbose: bool,
 
     /// Print mode - single response, no TUI
-    #[arg(short = 'p', long)]
+    #[arg(long)]
     print: bool,
 
     /// List available models
