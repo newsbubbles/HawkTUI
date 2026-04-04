@@ -255,12 +255,11 @@ impl PiBridge {
             .await
             .map_err(|e| Error::agent(format!("Failed to create session: {e}")))?;
 
-        // Get the session ID
+        // Get the session ID from state
         let session_id = {
-            let _guard = handle.session();
-            // Access session ID from the agent session
-            // The session ID is in the session header
-            "new_session".to_string() // TODO: Extract actual session ID
+            let state = handle.state().await
+                .map_err(|e| Error::agent(format!("Failed to get session state: {e}")))?;
+            state.session_id.unwrap_or_else(|| "new_session".to_string())
         };
 
         self.handle = Some(Arc::new(Mutex::new(handle)));

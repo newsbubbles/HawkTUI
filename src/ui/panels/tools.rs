@@ -84,7 +84,10 @@ impl Widget for ToolsPanel<'_> {
                 let spinner_char = spinner.current_frame();
 
                 items.push(ListItem::new(Line::from(vec![
-                    Span::styled(format!("{spinner_char} "), Style::default().fg(self.theme.warning())),
+                    Span::styled(
+                        format!("{spinner_char} "),
+                        Style::default().fg(self.theme.warning()),
+                    ),
                     Span::styled(&tool.name, Style::default().fg(self.theme.fg())),
                     Span::styled(progress, Style::default().fg(self.theme.muted())),
                 ])));
@@ -109,7 +112,7 @@ impl Widget for ToolsPanel<'_> {
 
             for (idx, tool) in self.tools_state.available.iter().enumerate() {
                 let is_selected = self.focused && self.selected_index == Some(idx);
-                
+
                 let (icon, color) = if tool.enabled {
                     ("✓", self.theme.success())
                 } else {

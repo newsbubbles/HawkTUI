@@ -7,8 +7,8 @@ use ratatui::{
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
     widgets::{
-        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
-        StatefulWidget, Widget, Wrap,
+        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget,
+        Widget, Wrap,
     },
 };
 use unicode_width::UnicodeWidthStr;
@@ -48,7 +48,7 @@ impl<'a> ConversationPanel<'a> {
     fn render_markdown(&self, content: &str, content_width: usize) -> Vec<Line<'static>> {
         let mut lines: Vec<Line<'static>> = Vec::new();
         let parser = Parser::new(content);
-        
+
         // State tracking
         let mut current_spans: Vec<Span<'static>> = Vec::new();
         let mut in_code_block = false;
@@ -66,7 +66,7 @@ impl<'a> ConversationPanel<'a> {
         // Determine if we're using a dark theme for syntect
         let is_dark_theme = self.theme.bg().eq(&Color::Rgb(13, 17, 23))
             || self.theme.bg().eq(&Color::Rgb(10, 10, 18));
-        
+
         for event in parser {
             match event {
                 Event::Start(Tag::Heading { level, .. }) => {
@@ -99,7 +99,11 @@ impl<'a> ConversationPanel<'a> {
                     code_block_lang = match kind {
                         CodeBlockKind::Fenced(lang) => {
                             let lang_str = lang.to_string();
-                            if lang_str.is_empty() { None } else { Some(lang_str) }
+                            if lang_str.is_empty() {
+                                None
+                            } else {
+                                Some(lang_str)
+                            }
                         }
                         CodeBlockKind::Indented => None,
                     };
@@ -151,9 +155,7 @@ impl<'a> ConversationPanel<'a> {
                     // Inline code
                     current_spans.push(Span::styled(
                         format!(" {code} "),
-                        Style::default()
-                            .fg(code_fg)
-                            .bg(inline_code_bg),
+                        Style::default().fg(code_fg).bg(inline_code_bg),
                     ));
                 }
                 Event::Text(text) => {
@@ -162,10 +164,7 @@ impl<'a> ConversationPanel<'a> {
                         for code_line in text.lines() {
                             let mut line_spans = vec![
                                 Span::raw("  "),
-                                Span::styled(
-                                    "│ ",
-                                    Style::default().fg(self.theme.muted()),
-                                ),
+                                Span::styled("│ ", Style::default().fg(self.theme.muted())),
                             ];
 
                             // Apply syntax highlighting using syntect
@@ -198,12 +197,16 @@ impl<'a> ConversationPanel<'a> {
                 Event::SoftBreak | Event::HardBreak => {
                     if !in_code_block && !current_spans.is_empty() {
                         // Wrap and flush current line
-                        let full_text: String = current_spans.iter().map(|s| s.content.as_ref()).collect();
+                        let full_text: String =
+                            current_spans.iter().map(|s| s.content.as_ref()).collect();
                         let wrapped = textwrap::wrap(&full_text, content_width);
                         for wrapped_line in wrapped {
                             lines.push(Line::from(vec![
                                 Span::raw("  "),
-                                Span::styled(wrapped_line.to_string(), Style::default().fg(self.theme.fg())),
+                                Span::styled(
+                                    wrapped_line.to_string(),
+                                    Style::default().fg(self.theme.fg()),
+                                ),
                             ]));
                         }
                         current_spans.clear();
@@ -215,9 +218,10 @@ impl<'a> ConversationPanel<'a> {
                 Event::End(TagEnd::Paragraph) => {
                     // Flush paragraph
                     if !current_spans.is_empty() {
-                        let full_text: String = current_spans.iter().map(|s| s.content.as_ref()).collect();
+                        let full_text: String =
+                            current_spans.iter().map(|s| s.content.as_ref()).collect();
                         let wrapped = textwrap::wrap(&full_text, content_width);
-                        
+
                         // Preserve styling for simple cases
                         if current_spans.len() == 1 {
                             for wrapped_line in wrapped {
@@ -242,10 +246,8 @@ impl<'a> ConversationPanel<'a> {
                     // Lists handled via items
                 }
                 Event::Start(Tag::Item) => {
-                    current_spans.push(Span::styled(
-                        "• ",
-                        Style::default().fg(self.theme.accent()),
-                    ));
+                    current_spans
+                        .push(Span::styled("• ", Style::default().fg(self.theme.accent())));
                 }
                 Event::End(TagEnd::Item) => {
                     if !current_spans.is_empty() {
@@ -257,14 +259,14 @@ impl<'a> ConversationPanel<'a> {
                 _ => {}
             }
         }
-        
+
         // Flush any remaining content
         if !current_spans.is_empty() {
             let mut line_spans = vec![Span::raw("  ")];
             line_spans.extend(current_spans);
             lines.push(Line::from(line_spans));
         }
-        
+
         lines
     }
 
@@ -289,9 +291,7 @@ impl<'a> ConversationPanel<'a> {
             Span::raw("  "),
             Span::styled(
                 format!("{role_icon} {role_name}"),
-                Style::default()
-                    .fg(role_color)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(role_color).add_modifier(Modifier::BOLD),
             ),
             Span::styled(
                 format!(" ─ {time_ago}"),
@@ -416,21 +416,17 @@ impl Widget for ConversationPanel<'_> {
 
         // Empty state
         if all_lines.is_empty() && !self.streaming.is_active {
-            all_lines.push(Line::from(vec![
-                Span::styled(
-                    "  🦅 Welcome to HawkTUI!",
-                    Style::default()
-                        .fg(self.theme.accent())
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ]));
+            all_lines.push(Line::from(vec![Span::styled(
+                "  🦅 Welcome to HawkTUI!",
+                Style::default()
+                    .fg(self.theme.accent())
+                    .add_modifier(Modifier::BOLD),
+            )]));
             all_lines.push(Line::raw(""));
-            all_lines.push(Line::from(vec![
-                Span::styled(
-                    "  Type a message below or use /help for commands.",
-                    Style::default().fg(self.theme.muted()),
-                ),
-            ]));
+            all_lines.push(Line::from(vec![Span::styled(
+                "  Type a message below or use /help for commands.",
+                Style::default().fg(self.theme.muted()),
+            )]));
         }
 
         let text = Text::from(all_lines.clone());

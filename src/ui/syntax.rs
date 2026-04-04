@@ -114,7 +114,7 @@ const fn select_syntect_theme(is_dark_theme: bool) -> &'static str {
 }
 
 /// Highlight a single line of code.
-/// 
+///
 /// Returns a vector of styled spans for the line.
 pub fn highlight_line(
     code: &str,
@@ -125,7 +125,7 @@ pub fn highlight_line(
 ) -> Vec<Span<'static>> {
     let ss = syntax_set();
     let ts = theme_set();
-    
+
     // Find syntax for the language
     let syntax = language
         .and_then(|lang| {
@@ -135,30 +135,27 @@ pub fn highlight_line(
                 .or_else(|| ss.find_syntax_by_token(lang))
         })
         .unwrap_or_else(|| ss.find_syntax_plain_text());
-    
+
     // Get the theme
     let theme_name = select_syntect_theme(is_dark_theme);
-    let theme = ts.themes.get(theme_name).unwrap_or_else(|| {
-        ts.themes.values().next().expect("No themes available")
-    });
-    
+    let theme = ts
+        .themes
+        .get(theme_name)
+        .unwrap_or_else(|| ts.themes.values().next().expect("No themes available"));
+
     // Create highlighter
     let mut highlighter = HighlightLines::new(syntax, theme);
-    
+
     // Highlight the line
     match highlighter.highlight_line(code, ss) {
         Ok(ranges) => {
             ranges
                 .into_iter()
                 .map(|(style, text)| {
-                    let fg = Color::Rgb(
-                        style.foreground.r,
-                        style.foreground.g,
-                        style.foreground.b,
-                    );
-                    
+                    let fg = Color::Rgb(style.foreground.r, style.foreground.g, style.foreground.b);
+
                     let mut ratatui_style = Style::default().fg(fg).bg(code_bg);
-                    
+
                     // Apply font style modifiers
                     if style.font_style.contains(FontStyle::BOLD) {
                         ratatui_style = ratatui_style.add_modifier(Modifier::BOLD);
@@ -169,7 +166,7 @@ pub fn highlight_line(
                     if style.font_style.contains(FontStyle::UNDERLINE) {
                         ratatui_style = ratatui_style.add_modifier(Modifier::UNDERLINED);
                     }
-                    
+
                     Span::styled(text.to_string(), ratatui_style)
                 })
                 .collect()
@@ -229,10 +226,10 @@ mod tests {
             Color::White,
             Color::Rgb(40, 42, 54),
         );
-        
+
         // Should produce multiple spans (keywords, strings, etc.)
         assert!(!spans.is_empty());
-        
+
         // Verify the content is preserved
         let reconstructed: String = spans.iter().map(|s| s.content.as_ref()).collect();
         assert_eq!(reconstructed, code);
@@ -248,7 +245,7 @@ mod tests {
             Color::White,
             Color::Rgb(40, 42, 54),
         );
-        
+
         // Should still produce spans (plain text fallback)
         assert!(!spans.is_empty());
     }
@@ -256,14 +253,8 @@ mod tests {
     #[test]
     fn test_highlight_no_language() {
         let code = "plain text content";
-        let spans = highlight_line(
-            code,
-            None,
-            true,
-            Color::White,
-            Color::Rgb(40, 42, 54),
-        );
-        
+        let spans = highlight_line(code, None, true, Color::White, Color::Rgb(40, 42, 54));
+
         assert!(!spans.is_empty());
     }
 

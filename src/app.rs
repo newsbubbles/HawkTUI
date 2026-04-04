@@ -12,18 +12,20 @@ use std::time::Duration;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
+    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout as RatatuiLayout, Rect},
-    Terminal,
 };
 
 use crate::core::{
     error::{Error, Result},
     events::{Action, map_key_to_action},
-    state::{AppMode, AppState, ConnectionStatus, LayoutMode, Message, Panel, SessionInfo, ToolInfo},
+    state::{
+        AppMode, AppState, ConnectionStatus, LayoutMode, Message, Panel, SessionInfo, ToolInfo,
+    },
 };
 use crate::providers::PiBridge;
 use crate::ui::{
@@ -118,10 +120,7 @@ impl App {
     }
 
     /// Restore the terminal to normal state.
-    fn restore_terminal(
-        &self,
-        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    ) -> Result<()> {
+    fn restore_terminal(&self, terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
         disable_raw_mode().map_err(|e| Error::terminal(e.to_string()))?;
         execute!(
             terminal.backend_mut(),
@@ -188,7 +187,8 @@ impl App {
             }
             CrosstermEvent::Paste(text) => {
                 // Handle paste - insert at char position
-                let byte_pos = char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
+                let byte_pos =
+                    char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
                 self.state.input.text.insert_str(byte_pos, &text);
                 self.state.input.cursor += text.chars().count();
             }
@@ -207,7 +207,7 @@ impl App {
                 if !self.state.input.text.is_empty() {
                     let msg = std::mem::take(&mut self.state.input.text);
                     self.state.input.cursor = 0;
-                    
+
                     // Add to history (avoid duplicates of last entry)
                     if self.state.input.history.front() != Some(&msg) {
                         self.state.input.history.push_front(msg.clone());
@@ -218,7 +218,7 @@ impl App {
                     }
                     // Reset history navigation
                     self.state.input.history_index = None;
-                    
+
                     self.send_message(&msg).await?;
                 }
             }
@@ -250,9 +250,8 @@ impl App {
                 });
             }
             Action::OpenSessionPicker => {
-                self.state.overlay = Some(crate::core::state::Overlay::SessionPicker {
-                    selected: 0,
-                });
+                self.state.overlay =
+                    Some(crate::core::state::Overlay::SessionPicker { selected: 0 });
             }
             Action::ToggleLayout => {
                 self.layout_manager.toggle_mode();
@@ -297,7 +296,8 @@ impl App {
                     self.state.mode = AppMode::Command;
                 }
                 // Convert char index to byte index for insertion
-                let byte_pos = char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
+                let byte_pos =
+                    char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
                 self.state.input.text.insert(byte_pos, c);
                 self.state.input.cursor += 1;
             }
@@ -305,7 +305,8 @@ impl App {
                 if self.state.input.cursor > 0 {
                     self.state.input.cursor -= 1;
                     // Convert char index to byte index for removal
-                    let byte_pos = char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
+                    let byte_pos =
+                        char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
                     self.state.input.text.remove(byte_pos);
                 }
                 // Exit command mode if we deleted the slash
@@ -317,7 +318,8 @@ impl App {
                 let char_count = self.state.input.text.chars().count();
                 if self.state.input.cursor < char_count {
                     // Convert char index to byte index for removal
-                    let byte_pos = char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
+                    let byte_pos =
+                        char_index_to_byte_index(&self.state.input.text, self.state.input.cursor);
                     self.state.input.text.remove(byte_pos);
                 }
             }
@@ -341,7 +343,10 @@ impl App {
                             // First press: save current input and show most recent history
                             if !self.state.input.text.is_empty() {
                                 // Store current input temporarily at the end
-                                self.state.input.history.push_back(self.state.input.text.clone());
+                                self.state
+                                    .input
+                                    .history
+                                    .push_back(self.state.input.text.clone());
                             }
                             Some(0)
                         }
@@ -416,15 +421,20 @@ impl App {
             }
             Action::SelectNextTool => {
                 if !self.state.tools.available.is_empty() {
-                    let new_idx = self.state.tools.selected_index.map_or(0, |idx| {
-                        (idx + 1).min(self.state.tools.available.len() - 1)
-                    });
+                    let new_idx = self
+                        .state
+                        .tools
+                        .selected_index
+                        .map_or(0, |idx| (idx + 1).min(self.state.tools.available.len() - 1));
                     self.state.tools.selected_index = Some(new_idx);
                 }
             }
             Action::SelectPrevTool => {
                 if !self.state.tools.available.is_empty() {
-                    let new_idx = self.state.tools.selected_index
+                    let new_idx = self
+                        .state
+                        .tools
+                        .selected_index
                         .map_or(0, |idx| idx.saturating_sub(1));
                     self.state.tools.selected_index = Some(new_idx);
                 }
@@ -452,7 +462,10 @@ impl App {
         }
 
         // Add user message to conversation
-        self.state.conversation.messages.push(Message::user(message));
+        self.state
+            .conversation
+            .messages
+            .push(Message::user(message));
         self.state.conversation.auto_scroll = true;
 
         // Start streaming mode
@@ -511,9 +524,10 @@ impl App {
                         (self.state.status.provider.clone(), model.clone())
                     };
                     if let Err(e) = self.bridge.set_model(&provider, &model_id).await {
-                        self.state.conversation.messages.push(
-                            Message::system(format!("Failed to set model: {e}"))
-                        );
+                        self.state
+                            .conversation
+                            .messages
+                            .push(Message::system(format!("Failed to set model: {e}")));
                     } else {
                         self.state.status.model = model_id;
                         self.state.status.provider = provider;
@@ -529,165 +543,182 @@ impl App {
                 if let Some(theme_name) = parsed.args.first() {
                     if let Some(new_theme) = Theme::by_name(theme_name) {
                         self.theme = new_theme;
-                        self.state.conversation.messages.push(
-                            Message::system(format!("Switched to theme: {}", self.theme.meta.name))
-                        );
+                        self.state
+                            .conversation
+                            .messages
+                            .push(Message::system(format!(
+                                "Switched to theme: {}",
+                                self.theme.meta.name
+                            )));
                     } else {
                         let available = Theme::available_themes().join(", ");
-                        self.state.conversation.messages.push(
-                            Message::system(format!(
+                        self.state
+                            .conversation
+                            .messages
+                            .push(Message::system(format!(
                                 "Unknown theme '{theme_name}'. Available themes: {available}"
-                            ))
-                        );
+                            )));
                     }
                 } else {
                     let available = Theme::available_themes().join(", ");
-                    self.state.conversation.messages.push(
-                        Message::system(format!(
+                    self.state
+                        .conversation
+                        .messages
+                        .push(Message::system(format!(
                             "Current theme: {}. Available: {available}",
                             self.theme.meta.name
-                        ))
-                    );
+                        )));
                 }
             }
             "vim" => {
                 self.state.input.vim_mode = !self.state.input.vim_mode;
-                let status = if self.state.input.vim_mode { "enabled" } else { "disabled" };
-                self.state.conversation.messages.push(
-                    Message::system(format!("Vim mode {status}"))
-                );
+                let status = if self.state.input.vim_mode {
+                    "enabled"
+                } else {
+                    "disabled"
+                };
+                self.state
+                    .conversation
+                    .messages
+                    .push(Message::system(format!("Vim mode {status}")));
             }
             "shortcuts" => {
                 // Show help overlay (same as /help for now - contains keybindings)
                 self.state.overlay = Some(crate::core::state::Overlay::Help);
             }
-            "session" => {
-                match parsed.args.first().map(String::as_str) {
-                    Some("new") => {
-                        let name = parsed.args.get(1).map(String::as_str).unwrap_or("unnamed");
-                        self.state.conversation.messages.push(
+            "session" => match parsed.args.first().map(String::as_str) {
+                Some("new") => {
+                    let name = parsed.args.get(1).map(String::as_str).unwrap_or("unnamed");
+                    self.state.conversation.messages.push(
                             Message::system(format!("Session created: {name} (simulated - pi_agent_rust integration pending)"))
                         );
-                    }
-                    Some("list") => {
-                        self.state.conversation.messages.push(
+                }
+                Some("list") => {
+                    self.state.conversation.messages.push(
                             Message::system(format!(
                                 "Sessions:\n  • current (active)\n\n(Session management requires pi_agent_rust integration)"
                             ))
                         );
-                    }
-                    Some("switch") => {
-                        if let Some(id) = parsed.args.get(1) {
-                            self.state.conversation.messages.push(
+                }
+                Some("switch") => {
+                    if let Some(id) = parsed.args.get(1) {
+                        self.state.conversation.messages.push(
                                 Message::system(format!("Switched to session: {id} (simulated - pi_agent_rust integration pending)"))
                             );
-                        } else {
-                            self.state.conversation.messages.push(
-                                Message::system("Usage: /session switch <session-id>".to_string())
-                            );
-                        }
+                    } else {
+                        self.state.conversation.messages.push(Message::system(
+                            "Usage: /session switch <session-id>".to_string(),
+                        ));
                     }
-                    Some("delete") => {
-                        if let Some(id) = parsed.args.get(1) {
-                            self.state.conversation.messages.push(
+                }
+                Some("delete") => {
+                    if let Some(id) = parsed.args.get(1) {
+                        self.state.conversation.messages.push(
                                 Message::system(format!("Session deleted: {id} (simulated - pi_agent_rust integration pending)"))
                             );
-                        } else {
-                            self.state.conversation.messages.push(
-                                Message::system("Usage: /session delete <session-id>".to_string())
-                            );
-                        }
-                    }
-                    _ => {
-                        self.state.conversation.messages.push(
-                            Message::system("Usage: /session [new|list|switch|delete] [name/id]".to_string())
-                        );
+                    } else {
+                        self.state.conversation.messages.push(Message::system(
+                            "Usage: /session delete <session-id>".to_string(),
+                        ));
                     }
                 }
-            }
-            "context" => {
-                match parsed.args.first().map(String::as_str) {
-                    Some("add") => {
-                        if let Some(file) = parsed.args.get(1) {
-                            self.state.conversation.messages.push(
-                                Message::system(format!("Added to context: {file}"))
-                            );
-                        } else {
-                            self.state.conversation.messages.push(
-                                Message::system("Usage: /context add <file-path>".to_string())
-                            );
-                        }
+                _ => {
+                    self.state.conversation.messages.push(Message::system(
+                        "Usage: /session [new|list|switch|delete] [name/id]".to_string(),
+                    ));
+                }
+            },
+            "context" => match parsed.args.first().map(String::as_str) {
+                Some("add") => {
+                    if let Some(file) = parsed.args.get(1) {
+                        self.state
+                            .conversation
+                            .messages
+                            .push(Message::system(format!("Added to context: {file}")));
+                    } else {
+                        self.state.conversation.messages.push(Message::system(
+                            "Usage: /context add <file-path>".to_string(),
+                        ));
                     }
-                    Some("remove") => {
-                        if let Some(file) = parsed.args.get(1) {
-                            self.state.conversation.messages.push(
-                                Message::system(format!("Removed from context: {file}"))
-                            );
-                        } else {
-                            self.state.conversation.messages.push(
-                                Message::system("Usage: /context remove <file-path>".to_string())
-                            );
-                        }
+                }
+                Some("remove") => {
+                    if let Some(file) = parsed.args.get(1) {
+                        self.state
+                            .conversation
+                            .messages
+                            .push(Message::system(format!("Removed from context: {file}")));
+                    } else {
+                        self.state.conversation.messages.push(Message::system(
+                            "Usage: /context remove <file-path>".to_string(),
+                        ));
                     }
-                    Some("clear") => {
-                        self.state.conversation.messages.push(
-                            Message::system("Context cleared".to_string())
-                        );
-                    }
-                    Some("list") | None => {
-                        self.state.conversation.messages.push(
-                            Message::system("Context: (empty)\n\nUsage: /context [add|remove|clear|list] [file-path]".to_string())
-                        );
-                    }
-                    Some(subcmd) => {
-                        self.state.conversation.messages.push(
+                }
+                Some("clear") => {
+                    self.state
+                        .conversation
+                        .messages
+                        .push(Message::system("Context cleared".to_string()));
+                }
+                Some("list") | None => {
+                    self.state.conversation.messages.push(Message::system(
+                        "Context: (empty)\n\nUsage: /context [add|remove|clear|list] [file-path]"
+                            .to_string(),
+                    ));
+                }
+                Some(subcmd) => {
+                    self.state.conversation.messages.push(
                             Message::system(format!("Unknown context subcommand: {subcmd}\n\nUsage: /context [add|remove|clear|list] [file-path]"))
                         );
-                    }
                 }
-            }
+            },
             "export" => {
-                let format = parsed.args.first().map(String::as_str).unwrap_or("markdown");
+                let format = parsed
+                    .args
+                    .first()
+                    .map(String::as_str)
+                    .unwrap_or("markdown");
                 self.state.conversation.messages.push(
                     Message::system(format!("Conversation exported as {format} (simulated - export functionality pending)"))
                 );
             }
-            "tools" => {
-                match parsed.args.first().map(String::as_str) {
-                    Some("list") | None => {
-                        self.state.conversation.messages.push(
+            "tools" => match parsed.args.first().map(String::as_str) {
+                Some("list") | None => {
+                    self.state.conversation.messages.push(
                             Message::system("Available tools:\n  • file_read\n  • file_write\n  • shell_exec\n  • web_search\n\n(Tool management requires pi_agent_rust integration)".to_string())
                         );
-                    }
-                    Some("enable") => {
-                        if let Some(tool) = parsed.args.get(1) {
-                            self.state.conversation.messages.push(
-                                Message::system(format!("Tool enabled: {tool} (simulated)"))
-                            );
-                        } else {
-                            self.state.conversation.messages.push(
-                                Message::system("Usage: /tools enable <tool-name>".to_string())
-                            );
-                        }
-                    }
-                    Some("disable") => {
-                        if let Some(tool) = parsed.args.get(1) {
-                            self.state.conversation.messages.push(
-                                Message::system(format!("Tool disabled: {tool} (simulated)"))
-                            );
-                        } else {
-                            self.state.conversation.messages.push(
-                                Message::system("Usage: /tools disable <tool-name>".to_string())
-                            );
-                        }
-                    }
-                    Some(subcmd) => {
-                        self.state.conversation.messages.push(
-                            Message::system(format!("Unknown tools subcommand: {subcmd}\n\nUsage: /tools [list|enable|disable] [tool-name]"))
-                        );
+                }
+                Some("enable") => {
+                    if let Some(tool) = parsed.args.get(1) {
+                        self.state
+                            .conversation
+                            .messages
+                            .push(Message::system(format!("Tool enabled: {tool} (simulated)")));
+                    } else {
+                        self.state.conversation.messages.push(Message::system(
+                            "Usage: /tools enable <tool-name>".to_string(),
+                        ));
                     }
                 }
-            }
+                Some("disable") => {
+                    if let Some(tool) = parsed.args.get(1) {
+                        self.state
+                            .conversation
+                            .messages
+                            .push(Message::system(format!(
+                                "Tool disabled: {tool} (simulated)"
+                            )));
+                    } else {
+                        self.state.conversation.messages.push(Message::system(
+                            "Usage: /tools disable <tool-name>".to_string(),
+                        ));
+                    }
+                }
+                Some(subcmd) => {
+                    self.state.conversation.messages.push(
+                            Message::system(format!("Unknown tools subcommand: {subcmd}\n\nUsage: /tools [list|enable|disable] [tool-name]"))
+                        );
+                }
+            },
             "branch" => {
                 self.state.conversation.messages.push(
                     Message::system("Conversation branching is not yet available.\n\nThis feature will allow you to create alternate conversation paths and explore different directions.".to_string())
@@ -699,20 +730,25 @@ impl App {
                         Message::system(format!("Provider set to: {provider} (simulated - pi_agent_rust integration pending)"))
                     );
                 } else {
-                    self.state.conversation.messages.push(
-                        Message::system("Usage: /provider <provider-name>\n\nAvailable: anthropic, openai, local".to_string())
-                    );
+                    self.state.conversation.messages.push(Message::system(
+                        "Usage: /provider <provider-name>\n\nAvailable: anthropic, openai, local"
+                            .to_string(),
+                    ));
                 }
             }
             "system" => {
                 if !parsed.raw_args.is_empty() {
-                    self.state.conversation.messages.push(
-                        Message::system(format!("System prompt updated (simulated - pi_agent_rust integration pending)"))
-                    );
+                    self.state
+                        .conversation
+                        .messages
+                        .push(Message::system(format!(
+                            "System prompt updated (simulated - pi_agent_rust integration pending)"
+                        )));
                 } else {
-                    self.state.conversation.messages.push(
-                        Message::system("Usage: /system <prompt>\n\nSets the system prompt for the conversation.".to_string())
-                    );
+                    self.state.conversation.messages.push(Message::system(
+                        "Usage: /system <prompt>\n\nSets the system prompt for the conversation."
+                            .to_string(),
+                    ));
                 }
             }
             "compact" => {
@@ -723,7 +759,10 @@ impl App {
             "tokens" => {
                 let msg_count = self.state.conversation.messages.len();
                 // Rough estimate: ~4 chars per token on average
-                let estimated_tokens: usize = self.state.conversation.messages
+                let estimated_tokens: usize = self
+                    .state
+                    .conversation
+                    .messages
                     .iter()
                     .map(|m| m.content.len() / 4)
                     .sum();
@@ -740,9 +779,13 @@ impl App {
             }
             _ => {
                 // Catch-all for any commands we missed - give user feedback
-                self.state.conversation.messages.push(
-                    Message::system(format!("Command '{}' is not yet implemented.", cmd.name))
-                );
+                self.state
+                    .conversation
+                    .messages
+                    .push(Message::system(format!(
+                        "Command '{}' is not yet implemented.",
+                        cmd.name
+                    )));
                 tracing::info!("Command not yet implemented: {}", cmd.name);
             }
         }
@@ -798,12 +841,14 @@ impl App {
     /// Refresh the sessions list from the bridge.
     async fn refresh_sessions(&mut self) -> Result<()> {
         let summaries = self.bridge.list_sessions().await?;
-        
+
         // Convert SessionSummary to SessionInfo
         self.state.sessions = summaries
             .into_iter()
             .map(|s| {
-                let is_active = self.state.current_session_id
+                let is_active = self
+                    .state
+                    .current_session_id
                     .map(|id| id.to_string() == s.id)
                     .unwrap_or(false);
                 SessionInfo {
@@ -816,12 +861,12 @@ impl App {
                 }
             })
             .collect();
-        
+
         // Update selected index if needed
         if self.state.selected_session_index.is_none() && !self.state.sessions.is_empty() {
             self.state.selected_session_index = Some(0);
         }
-        
+
         Ok(())
     }
 
@@ -831,7 +876,7 @@ impl App {
         for session in &mut self.state.sessions {
             session.is_active = false;
         }
-        
+
         // Mark new session as active
         for session in &mut self.state.sessions {
             if session.id == session_id {
@@ -840,17 +885,20 @@ impl App {
                 break;
             }
         }
-        
+
         self.state.current_session_id = Some(session_id);
-        
+
         // Clear conversation for new session context.
         // When pi_agent_rust integration is complete, this will load
         // the session's conversation history from the bridge.
         self.state.conversation.messages.clear();
-        self.state.conversation.messages.push(
-            Message::system(format!("Switched to session: {session_id}"))
-        );
-        
+        self.state
+            .conversation
+            .messages
+            .push(Message::system(format!(
+                "Switched to session: {session_id}"
+            )));
+
         Ok(())
     }
 
@@ -965,9 +1013,7 @@ impl App {
                 vec![
                     Span::styled(
                         format!(" {key} "),
-                        Style::default()
-                            .fg(self.theme.bg())
-                            .bg(self.theme.muted()),
+                        Style::default().fg(self.theme.bg()).bg(self.theme.muted()),
                     ),
                     Span::styled(
                         format!(" {action} "),
@@ -1057,7 +1103,9 @@ impl App {
                     .border_style(Style::default().fg(self.theme.border_focused()))
                     .style(Style::default().bg(Theme::parse_color(&self.theme.panels.sidebar_bg)));
 
-                let para = Paragraph::new(help_text).block(block).wrap(Wrap { trim: false });
+                let para = Paragraph::new(help_text)
+                    .block(block)
+                    .wrap(Wrap { trim: false });
 
                 frame.render_widget(para, overlay_area);
             }

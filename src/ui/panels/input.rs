@@ -150,7 +150,8 @@ impl Widget for InputPanel<'_> {
         // Right-side indicators
         let indicators = format_indicators(&self.input.text, self.theme);
         if !indicators.is_empty() && inner.width > 20 {
-            let indicator_width: usize = indicators.iter().map(|s| s.content.width()).sum::<usize>() + 2;
+            let indicator_width: usize =
+                indicators.iter().map(|s| s.content.width()).sum::<usize>() + 2;
             let x = inner.x + inner.width - indicator_width as u16;
             let indicator_line = Line::from(indicators);
             buf.set_line(x, inner.y, &indicator_line, indicator_width as u16);

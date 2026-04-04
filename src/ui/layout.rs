@@ -100,10 +100,10 @@ impl LayoutManager {
         let vertical = RatatuiLayout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(1),                  // Header
-                Constraint::Min(10),                    // Main
+                Constraint::Length(1),                 // Header
+                Constraint::Min(10),                   // Main
                 Constraint::Length(self.input_height), // Input
-                Constraint::Length(1),                  // Footer
+                Constraint::Length(1),                 // Footer
             ])
             .split(area);
 
@@ -140,10 +140,10 @@ impl LayoutManager {
         let vertical = RatatuiLayout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(1),                  // Header
-                Constraint::Min(10),                    // Conversation
+                Constraint::Length(1),                 // Header
+                Constraint::Min(10),                   // Conversation
                 Constraint::Length(self.input_height), // Input
-                Constraint::Length(1),                  // Footer
+                Constraint::Length(1),                 // Footer
             ])
             .split(area);
 
@@ -163,10 +163,10 @@ impl LayoutManager {
         let vertical = RatatuiLayout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(1),                  // Header
-                Constraint::Min(10),                    // Main
+                Constraint::Length(1),                 // Header
+                Constraint::Min(10),                   // Main
                 Constraint::Length(self.input_height), // Input
-                Constraint::Length(1),                  // Footer
+                Constraint::Length(1),                 // Footer
             ])
             .split(area);
 
@@ -215,10 +215,7 @@ pub fn inner_area(area: Rect, padding: u16) -> Rect {
 
 /// Split an area into rows.
 pub fn split_rows(area: Rect, heights: &[u16]) -> Vec<Rect> {
-    let constraints: Vec<Constraint> = heights
-        .iter()
-        .map(|&h| Constraint::Length(h))
-        .collect();
+    let constraints: Vec<Constraint> = heights.iter().map(|&h| Constraint::Length(h)).collect();
 
     RatatuiLayout::default()
         .direction(Direction::Vertical)
@@ -229,10 +226,7 @@ pub fn split_rows(area: Rect, heights: &[u16]) -> Vec<Rect> {
 
 /// Split an area into columns.
 pub fn split_cols(area: Rect, widths: &[u16]) -> Vec<Rect> {
-    let constraints: Vec<Constraint> = widths
-        .iter()
-        .map(|&w| Constraint::Length(w))
-        .collect();
+    let constraints: Vec<Constraint> = widths.iter().map(|&w| Constraint::Length(w)).collect();
 
     RatatuiLayout::default()
         .direction(Direction::Horizontal)

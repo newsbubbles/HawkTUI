@@ -71,13 +71,21 @@ pub enum AgentEvent {
     ThinkingEnd,
 
     /// Tool call started.
-    ToolStart { id: String, name: String, input: String },
+    ToolStart {
+        id: String,
+        name: String,
+        input: String,
+    },
 
     /// Tool call progress.
     ToolProgress { id: String, progress: f32 },
 
     /// Tool call completed.
-    ToolEnd { id: String, output: String, is_error: bool },
+    ToolEnd {
+        id: String,
+        output: String,
+        is_error: bool,
+    },
 
     /// Streaming completed.
     StreamEnd { stop_reason: StopReason },
@@ -125,7 +133,10 @@ pub enum InternalEvent {
     LayoutChanged { layout: String },
 
     /// Notification.
-    Notification { message: String, level: NotificationLevel },
+    Notification {
+        message: String,
+        level: NotificationLevel,
+    },
 
     /// Command executed.
     CommandExecuted { command: String },

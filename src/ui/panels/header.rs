@@ -52,21 +52,30 @@ impl Widget for HeaderPanel<'_> {
                 .fg(self.theme.fg())
                 .add_modifier(Modifier::BOLD),
         ));
-        spans.push(Span::styled(" │ ", Style::default().fg(self.theme.border())));
+        spans.push(Span::styled(
+            " │ ",
+            Style::default().fg(self.theme.border()),
+        ));
 
         // Tokens
         spans.push(Span::styled(
             format!("tokens: {}", format_tokens(self.status.total_tokens)),
             Style::default().fg(self.theme.muted()),
         ));
-        spans.push(Span::styled(" │ ", Style::default().fg(self.theme.border())));
+        spans.push(Span::styled(
+            " │ ",
+            Style::default().fg(self.theme.border()),
+        ));
 
         // Cost
         spans.push(Span::styled(
             format!("${:.3}", self.status.cost),
             Style::default().fg(Theme::parse_color("#3fb950")),
         ));
-        spans.push(Span::styled(" │ ", Style::default().fg(self.theme.border())));
+        spans.push(Span::styled(
+            " │ ",
+            Style::default().fg(self.theme.border()),
+        ));
 
         // Connection status
         let (status_icon, status_color) = match self.status.connection {
@@ -88,10 +97,7 @@ impl Widget for HeaderPanel<'_> {
             ConnectionStatus::Streaming => "streaming",
             ConnectionStatus::Error => "error",
         };
-        spans.push(Span::styled(
-            status_text,
-            Style::default().fg(status_color),
-        ));
+        spans.push(Span::styled(status_text, Style::default().fg(status_color)));
 
         // Session name (right-aligned)
         if let Some(ref session_name) = self.status.session_name {

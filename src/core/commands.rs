@@ -196,9 +196,9 @@ pub fn parse_command(input: &str) -> Option<ParsedCommand> {
 /// Find a command by name or alias.
 pub fn find_command(name: &str) -> Option<&'static SlashCommand> {
     let name = name.to_lowercase();
-    COMMANDS.iter().find(|cmd| {
-        cmd.name == name || cmd.aliases.iter().any(|&alias| alias == name)
-    })
+    COMMANDS
+        .iter()
+        .find(|cmd| cmd.name == name || cmd.aliases.iter().any(|&alias| alias == name))
 }
 
 /// Get command completions for a prefix.
