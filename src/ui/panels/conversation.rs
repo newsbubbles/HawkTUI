@@ -1,16 +1,20 @@
 //! Conversation panel for displaying chat messages.
 
-use pulldown_cmark::{Event, Parser, Tag, TagEnd, CodeBlockKind};
+use pulldown_cmark::{CodeBlockKind, Event, Parser, Tag, TagEnd};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget, Wrap},
+    widgets::{
+        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
+        StatefulWidget, Widget, Wrap,
+    },
 };
 use unicode_width::UnicodeWidthStr;
 
 use crate::core::state::{Conversation, Message, MessageRole, StreamingState};
+use crate::ui::syntax::highlight_line;
 use crate::ui::themes::Theme;
 use crate::ui::widgets::{StreamingIndicator, ThinkingIndicator};
 
@@ -48,17 +52,20 @@ impl<'a> ConversationPanel<'a> {
         // State tracking
         let mut current_spans: Vec<Span<'static>> = Vec::new();
         let mut in_code_block = false;
-        #[allow(unused_assignments)]
         let mut code_block_lang: Option<String> = None;
         let mut is_bold = false;
         let mut is_italic = false;
         let _is_code = false; // Reserved for future inline code state tracking
         let mut heading_level: Option<u8> = None;
-        
+
         // Code block background color
         let code_bg = Color::Rgb(40, 42, 54); // Dark background for code
         let code_fg = Theme::parse_color(&self.theme.syntax.string);
         let inline_code_bg = Color::Rgb(50, 52, 64);
+
+        // Determine if we're using a dark theme for syntect
+        let is_dark_theme = self.theme.bg().eq(&Color::Rgb(13, 17, 23))
+            || self.theme.bg().eq(&Color::Rgb(10, 10, 18));
         
         for event in parser {
             match event {
@@ -127,7 +134,6 @@ impl<'a> ConversationPanel<'a> {
                         ),
                     ]));
                     code_block_lang = None; // Reset for next code block
-                    let _ = &code_block_lang; // Suppress unused warning
                 }
                 Event::Start(Tag::Strong) => {
                     is_bold = true;
@@ -152,19 +158,27 @@ impl<'a> ConversationPanel<'a> {
                 }
                 Event::Text(text) => {
                     if in_code_block {
-                        // Render code block lines
+                        // Render code block lines with syntax highlighting
                         for code_line in text.lines() {
-                            lines.push(Line::from(vec![
+                            let mut line_spans = vec![
                                 Span::raw("  "),
                                 Span::styled(
                                     "│ ",
                                     Style::default().fg(self.theme.muted()),
                                 ),
-                                Span::styled(
-                                    code_line.to_string(),
-                                    Style::default().fg(code_fg).bg(code_bg),
-                                ),
-                            ]));
+                            ];
+
+                            // Apply syntax highlighting using syntect
+                            let highlighted_spans = highlight_line(
+                                code_line,
+                                code_block_lang.as_deref(),
+                                is_dark_theme,
+                                code_fg,
+                                code_bg,
+                            );
+                            line_spans.extend(highlighted_spans);
+
+                            lines.push(Line::from(line_spans));
                         }
                     } else {
                         // Regular text with styling

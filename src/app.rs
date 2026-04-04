@@ -78,8 +78,8 @@ impl App {
         // Connect to agent
         self.bridge.connect().await?;
         self.state.status.connection = ConnectionStatus::Connected;
-        self.state.status.model = self.bridge.model().to_string();
-        self.state.status.provider = self.bridge.provider().to_string();
+        self.state.status.model = self.bridge.model().await;
+        self.state.status.provider = self.bridge.provider().await;
 
         // Load tools
         self.state.tools.available = self
@@ -503,8 +503,21 @@ impl App {
             }
             "model" => {
                 if let Some(model) = parsed.args.first() {
-                    self.bridge.set_model(model);
-                    self.state.status.model = model.clone();
+                    // Parse as "provider/model" or just "model"
+                    let (provider, model_id) = if model.contains('/') {
+                        let parts: Vec<&str> = model.splitn(2, '/').collect();
+                        (parts[0].to_string(), parts[1].to_string())
+                    } else {
+                        (self.state.status.provider.clone(), model.clone())
+                    };
+                    if let Err(e) = self.bridge.set_model(&provider, &model_id).await {
+                        self.state.conversation.messages.push(
+                            Message::system(format!("Failed to set model: {e}"))
+                        );
+                    } else {
+                        self.state.status.model = model_id;
+                        self.state.status.provider = provider;
+                    }
                 }
             }
             "layout" => {

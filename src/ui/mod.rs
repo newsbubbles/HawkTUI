@@ -4,6 +4,7 @@
 
 pub mod layout;
 pub mod panels;
+pub mod syntax;
 pub mod themes;
 pub mod widgets;
 

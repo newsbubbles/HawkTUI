@@ -101,6 +101,8 @@ pub enum StopReason {
     MaxTokens,
     StopSequence,
     ToolUse,
+    ContentFilter,
+    Error,
     Cancelled,
 }
 

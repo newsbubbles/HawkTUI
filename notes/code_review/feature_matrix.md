@@ -11,10 +11,10 @@
 | Metric | Count | Percentage |
 |--------|-------|------------|
 | **Total Features Claimed** | 67 | 100% |
-| **Fully Implemented** | 44 | 66% |
+| **Fully Implemented** | 45 | 67% |
 | **Partially Implemented** | 15 | 22% |
-| **Not Implemented** | 8 | 12% |
-| **Overall Completion** | - | **88%** |
+| **Not Implemented** | 7 | 10% |
+| **Overall Completion** | - | **89%** |
 
 ### Recent Updates (v0.2.0 Implementation)
 
@@ -27,7 +27,7 @@
 - No TODO comments remain in production code
 - Mouse event handling stubbed properly
 - **Markdown rendering** via `pulldown-cmark` (headers, bold, italic, code blocks, inline code, lists)
-- **Code block styling** with distinct background and border decoration
+- **Syntax highlighting** via `syntect` (50+ languages, dark/light theme support, `src/ui/syntax.rs`)
 
 ---
 
@@ -134,7 +134,7 @@
 | 53 | Multi-panel layout | Yes | **Yes** | `src/ui/layout.rs` | ✅ |
 | 54 | Session list panel | Yes | **Partial** | Panel renders, always empty | ⚠️ |
 | 55 | Tool execution panel | Yes | **Partial** | Panel renders, fake data | ⚠️ |
-| 56 | Syntax highlighting for code | Yes | **Partial** | Code blocks have distinct styling, full syntect pending | ⚠️ |
+| 56 | Syntax highlighting for code | Yes | **Yes** | `syntect` integrated in `src/ui/syntax.rs`, 50+ languages supported | ✅ |
 | 57 | Markdown rendering | Yes | **Yes** | `pulldown-cmark` used in conversation.rs for headers, bold, italic, code blocks, lists | ✅ |
 | 58 | Basic theming | Yes | **Yes** | Themes defined, `/theme` command works | ✅ |
 
@@ -207,7 +207,7 @@ Fully implemented in `src/app.rs:515-539`:
 
 #### 5. **Syntax Highlighting** (Severity: MEDIUM)
 
-`syntect` is in Cargo.toml - code blocks use theme-based coloring but full syntect integration pending.
+`syntect` is now fully integrated in `src/ui/syntax.rs` with 50+ language support and dark/light theme detection.
 `pulldown-cmark` is now used in `conversation.rs` for markdown rendering (headers, bold, italic, code blocks, lists).
 
 ---
@@ -231,7 +231,7 @@ Fully implemented in `src/app.rs:515-539`:
 ### By Implementation Status
 
 ```
-Fully Implemented (44):
+Fully Implemented (45):
 ├── Multi-panel layout
 ├── Hawk Dark/Light/Cyberpunk themes (defined + switching works)
 ├── All keyboard shortcuts
@@ -249,7 +249,7 @@ Fully Implemented (44):
 ├── Vim mode toggle with feedback
 ├── Token usage estimation
 ├── Markdown rendering (pulldown-cmark: headers, bold, italic, code blocks, lists)
-└── Code block styling with distinct background
+└── Syntax highlighting (syntect: 50+ languages, dark/light theme support)
 
 Partially Implemented (15):
 ├── Streaming state (simulated, awaits pi_agent_rust)
@@ -263,10 +263,9 @@ Partially Implemented (15):
 ├── Export (simulated, awaits implementation)
 └── Context management (simulated, awaits implementation)
 
-Not Implemented (8):
+Not Implemented (7):
 ├── pi_agent_rust integration (blocked - no dependency)
 ├── Real streaming from agent
-├── Full syntax highlighting (syntect language detection)
 ├── Custom theme TOML loading
 ├── Code review mode
 ├── Diff visualization
@@ -289,7 +288,7 @@ Not Implemented (8):
 
 5. ~~**Implement theme switching**~~ ✅ DONE
 6. ~~**Implement model switching**~~ ✅ DONE
-7. **Full syntax highlighting** - Use `syntect` for language-specific coloring
+7. ~~**Full syntax highlighting**~~ ✅ DONE - `syntect` integrated in `src/ui/syntax.rs`
 8. ~~**Wire up markdown rendering**~~ ✅ DONE - `pulldown-cmark` integrated
 
 ### Priority 3: Polish (Nice to Have)
@@ -330,12 +329,12 @@ HawkTUI v0.2.0 has made **significant progress** toward a complete implementatio
 - Context file management
 
 ❌ **Future work:**
-- Full syntax highlighting (syntect language detection)
 - Code review mode
+- Diff visualization
 - Diff visualization
 - File browser
 
-**Bottom Line**: The project has progressed from 44% to **88% completion**. All user-facing commands provide feedback, UI widgets are functional, markdown rendering works, and the codebase is clean. The main blocker is the external `pi_agent_rust` dependency for actual AI integration.
+**Bottom Line**: The project has progressed from 44% to **89% completion**. All user-facing commands provide feedback, UI widgets are functional, markdown rendering and syntax highlighting work, and the codebase is clean. The main blocker is the external `pi_agent_rust` dependency for actual AI integration.
 
 ---
 
