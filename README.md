@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/hawktui/hawktui/main/assets/hawk-logo.svg" alt="HawkTUI" width="200"/>
+  <img src="https://raw.githubusercontent.com/hawktui/hawktui/main/assets/banner.png" alt="HawkTUI Banner" width="800"/>
 </p>
 
 <h1 align="center">🦅 HawkTUI</h1>
